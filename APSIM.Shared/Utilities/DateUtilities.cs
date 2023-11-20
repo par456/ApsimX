@@ -849,6 +849,24 @@ namespace APSIM.Shared.Utilities
         }
 
         /// <summary>
+        /// Takes in a string and checks to see if it could be date with three components, day, month and year. Returns true if it could be,
+        /// false if not. Does not actually parse into a DateTime to avoid throwing an error.
+        /// This is used to test if a number with a . is a date or a double.
+        /// </summary>
+        /// <param name="dateStr"></param>
+        public static bool ValidateStringHasYear(string dateStr)
+        {
+            DateAsParts parts;
+            parts = ParseDateString(dateStr);
+            if (parts.parseError)
+                return false;
+            else if (parts.yearWasMissing)
+                return false;
+            else
+                return true;
+        }
+
+        /// <summary>
         /// Takes in a string and validates it as a 'dd-mmm' value, or as a full date, and a year value.  When
         /// the 'dd-MMM' value is passed the year value is used to build a valid date.
         /// </summary>
