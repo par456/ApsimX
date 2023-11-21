@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using APSIM.Shared.Utilities;
 using Models.Core;
+using Models.PreSimulationTools;
 using Models.Storage;
 using Newtonsoft.Json;
 
@@ -45,6 +46,11 @@ namespace Models
         [Link]
         private IDataStore storage = null;
 
+        /// <summary>
+        /// ObservedInput object.
+        /// </summary>
+        private ObservedInput observedInput = null;
+
         /// <summary>Link to an event service.</summary>
         [Link]
         [NonSerialized]
@@ -55,6 +61,12 @@ namespace Models
         /// </summary>
         [Summary]
         public string[] VariableNames { get; set; }
+
+        /// <summary>
+        /// Gets or sets column names from the ObservedInput model.
+        /// </summary>
+        [Summary]
+        public string[] ObservedColumnNames { get; private set; }
 
         /// <summary>
         /// Gets or sets event names for outputting
@@ -72,8 +84,7 @@ namespace Models
         [JsonIgnore]
         public int ActiveTabIndex = 0;
 
-        //[Link]
-        //private ObservedInput observedInput = null;
+
 
         /// <summary>
         /// Connect event handlers.
@@ -96,6 +107,11 @@ namespace Models
 
             // Tidy up variable/event names.
             VariableNames = TidyUpVariableNames();
+
+            observedInput = (storage as Model).FindChild<ObservedInput>();
+
+            ObservedColumnNames = observedInput.ColumnNames;
+
 
             // Locate reporting variables.
             FindVariableMembers();
@@ -137,7 +153,7 @@ namespace Models
             var regEx = new Regex(pattern);
             var match = regEx.Match(firstAggregatedVariableName);
             if (!match.Success)
-                throw new Exception($"Invalid format for report agregation variable {firstAggregatedVariableName}");
+                throw new Exception($"Invalid format for report aggregation variable {firstAggregatedVariableName}");
             from = match.Groups["from"].Value;
             to = match.Groups["to"].Value;
         }
@@ -153,7 +169,7 @@ namespace Models
 
             // If a group by variable was specified then all columns need to be aggregated
             // columns. Find the first aggregated column so that we can, later, use its from and to
-            // variables to create an agregated column that doesn't have them.
+            // variables to create an aggregated column that doesn't have them.
             string from = null;
             string to = null;
             if (!string.IsNullOrEmpty(GroupByVariableName))

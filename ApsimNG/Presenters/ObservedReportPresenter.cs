@@ -1,4 +1,5 @@
-﻿using Models;
+﻿using System;
+using Models;
 using Models.Core;
 using Models.Factorial;
 using Models.Storage;
@@ -100,6 +101,54 @@ namespace ApsimNG.Presenters
                 else
                     (currentEditor as IEditView).InsertCompletionOption(args.ItemSelected, args.TriggerWord);
             }
+        }
+
+        /// <summary>
+        /// The view is asking for items for its intellisense.
+        /// </summary>
+        /// <param name="sender">Editor that the user is typing in.</param>
+        /// <param name="e">Event Arguments.</param>
+        /// <param name="properties">Whether or not property suggestions should be generated.</param>
+        /// <param name="methods">Whether or not method suggestions should be generated.</param>
+        /// <param name="events">Whether or not event suggestions should be generated.</param>
+        private void GetCompletionOptions(object sender, NeedContextItemsArgs e, bool properties, bool methods, bool events)
+        {
+            try
+            {
+                string currentLine = GetLine(e.Code, e.LineNo - 1);
+                currentEditor = sender;
+                if (!e.ControlShiftSpace && intellisense.GenerateGridCompletions(currentLine, e.ColNo, observedReport, properties, methods, events, false, e.ControlSpace))
+                    intellisense.Show(e.Coordinates.X, e.Coordinates.Y);
+            }
+            catch (Exception err)
+            {
+                explorerPresenter.MainPresenter.ShowError(err);
+            }
+        }
+
+        /// <summary>
+        /// Gets a specific line of text, preserving empty lines.
+        /// </summary>
+        /// <param name="text">Text.</param>
+        /// <param name="lineNo">0-indexed line number.</param>
+        /// <returns>String containing a specific line of text.</returns>
+        private string GetLine(string text, int lineNo)
+        {
+            // string.Split(Environment.NewLine.ToCharArray()) doesn't work well for us on Windows - Mono.TextEditor seems 
+            // to use unix-style line endings, so every second element from the returned array is an empty string.
+            // If we remove all empty strings from the result then we also remove any lines which were deliberately empty.
+
+            // TODO : move this to APSIM.Shared.Utilities.StringUtilities?
+            string currentLine;
+            using (System.IO.StringReader reader = new System.IO.StringReader(text))
+            {
+                int i = 0;
+                while ((currentLine = reader.ReadLine()) != null && i < lineNo)
+                {
+                    i++;
+                }
+            }
+            return currentLine;
         }
     }
 }
