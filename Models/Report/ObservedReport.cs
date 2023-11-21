@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Models.Core;
 using Models.PreSimulationTools;
 using Models.Storage;
@@ -16,11 +17,6 @@ namespace Models
     [ValidParent(ParentType = typeof(Simulation))]
     public class ObservedReport : Report
     {
-        /// <summary>
-        /// ColumnNames from ObservedInput.
-        /// </summary>
-        private string[] ColumnNames { get; set; }
-
         /// <summary>Link to a storage service.</summary>
         [Link]
         private IDataStore storage = null;
@@ -50,14 +46,18 @@ namespace Models
         new protected void SubscribeToEvents()
         {
             //VariableNames = new string[] { "[Wheat].Leaf.Wt" };
-            ColumnNames = (storage as Model).FindChild<ObservedInput>().ColumnNames;
+            List<string> columnNames = (storage as Model).FindChild<ObservedInput>().ColumnNames.ToList();
+            columnNames = RemoveExtraArrayColumns(columnNames);
+
             EventNames = new string[] { eventFrequency };
             List<string> confirmedColumnNames = new();
-            foreach (string columnName in ColumnNames)
+            foreach (string columnName in columnNames)
                 if (NameMatchesAPSIMModel(columnName) != null)
                     confirmedColumnNames.Add(columnName);
 
-            VariableNames = AddSquareBracketsToColumnName(confirmedColumnNames).ToArray();
+            columnNames = AddSquareBracketsToColumnName(confirmedColumnNames);
+
+            VariableNames = columnNames.ToArray();
 
             base.SubscribeToEvents();
         }
@@ -108,6 +108,27 @@ namespace Models
 
             }
             return formattedColumnNames;
+        }
+
+        private List<string> RemoveExtraArrayColumns(List<string> columnNames)
+        {
+            List<string> newColumnNames = new();
+            foreach (string columnName in columnNames)
+            {
+                if (columnName.Contains("(") && columnName.Contains(")"))
+                {
+                    string newName = columnName.Split("(")[0];
+                    if (!newColumnNames.Contains(newName))
+                    {
+                        newColumnNames.Add(newName);
+                    }
+                }
+                else
+                {
+                    newColumnNames.Add(columnName);
+                }
+            }
+            return newColumnNames;
         }
     }
 }
