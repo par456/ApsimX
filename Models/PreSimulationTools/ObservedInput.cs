@@ -192,32 +192,6 @@ namespace Models.PreSimulationTools
                 return false;
         }
 
-        /// <summary>DO not use in pre-sim step, FindByPath uses links that break seralization</summary>
-        private IVariable NameMatchesAPSIMModel(string columnName)
-        {
-            Simulations sims = (this as Model).FindAncestor<Simulations>();
-
-            string cleanedName = columnName;
-            //strip ( ) out of columns that refer to arrays
-            if (columnName.Contains('(') || columnName.Contains(')'))
-            {
-                int openPos = cleanedName.IndexOf('(');
-                cleanedName = cleanedName.Substring(0, openPos);
-            }
-
-            string[] nameParts = cleanedName.Split('.');
-            IModel firstPart = sims.FindDescendant(nameParts[0]);
-            if (firstPart == null)
-                return null;
-
-            sims.Links.Resolve(firstPart, true, true, false);
-            string fullPath = firstPart.FullPath;
-            for (int i = 1; i < nameParts.Length; i++)
-                fullPath += "." + nameParts[i];
-
-            IVariable variable = sims.FindByPath(fullPath);
-            return null;
-        }
 
         /// <summary>From the list of columns read in, get a list of columns that match apsim variables.</summary>
         public void GetAPSIMColumnsFromObserved()
@@ -231,7 +205,7 @@ namespace Models.PreSimulationTools
                 tableNames.Add(name);
                 inputNames.Add(Name);
             }
-            
+
             List<string> errors = new List<string>();
             List<string> columnNames = new List<string>();
             for (int i = 0; i < tableNames.Count; i++)
