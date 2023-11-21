@@ -27,6 +27,7 @@ namespace Models.PreSimulationTools
         /// <summary>
         /// The DataStore.
         /// </summary>
+        [Link]
         private IDataStore storage = null;
 
         /// <summary>
@@ -110,7 +111,8 @@ namespace Models.PreSimulationTools
         /// </summary>
         public void Run()
         {
-            storage = this.FindAncestor<DataStore>();
+            if (storage == null)
+                storage = this.FindAncestor<DataStore>();
 
             foreach (string sheet in SheetNames)
                 if (storage.Reader.TableNames.Contains(sheet))
@@ -222,7 +224,8 @@ namespace Models.PreSimulationTools
         /// <summary>From the list of columns read in, get a list of columns that match apsim variables.</summary>
         public void GetAPSIMColumnsFromObserved()
         {
-            storage = this.FindAncestor<DataStore>();
+            storage?.Writer.Stop();
+            storage?.Reader.Refresh();
 
             List<string> tableNames = new List<string>();
             List<string> inputNames = new List<string>();
