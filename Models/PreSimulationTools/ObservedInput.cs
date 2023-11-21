@@ -20,14 +20,13 @@ namespace Models.PreSimulationTools
     [ViewName("UserInterface.Views.PropertyView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
     [ValidParent(ParentType = typeof(DataStore))]
-    public class ObservedInput : Model, IPostSimulationTool, IReferenceExternalFiles
+    public class ObservedInput : Model, IPreSimulationTool, IReferenceExternalFiles
     {
         private string[] filenames;
 
         /// <summary>
         /// The DataStore.
         /// </summary>
-        [Link]
         private IDataStore storage = null;
 
         /// <summary>
@@ -111,6 +110,8 @@ namespace Models.PreSimulationTools
         /// </summary>
         public void Run()
         {
+            storage = this.Parent as DataStore;
+
             foreach (string sheet in SheetNames)
                 if (storage.Reader.TableNames.Contains(sheet))
                     storage.Writer.DeleteTable(sheet);
@@ -157,7 +158,7 @@ namespace Models.PreSimulationTools
                 }
             }
 
-            RunValidation();
+            GetAPSIMColumnsFromObserved();
         }
 
         /// <summary>
@@ -191,9 +192,11 @@ namespace Models.PreSimulationTools
                 return false;
         }
 
-        /// <summary></summary>
-        private IVariable NameMatchesAPSIMModel(string columnName, Simulations sims)
+        /// <summary>DO not use in pre-sim step, FindByPath uses links that break seralization</summary>
+        private IVariable NameMatchesAPSIMModel(string columnName)
         {
+            Simulations sims = (this as Model).FindAncestor<Simulations>();
+
             string cleanedName = columnName;
             //strip ( ) out of columns that refer to arrays
             if (columnName.Contains('(') || columnName.Contains(')'))
@@ -212,23 +215,15 @@ namespace Models.PreSimulationTools
             for (int i = 1; i < nameParts.Length; i++)
                 fullPath += "." + nameParts[i];
 
-            try
-            {
-                IVariable variable = sims.FindByPath(fullPath);
-                return variable;
-            }
-            catch
-            {
-                return null;
-            }
+            IVariable variable = sims.FindByPath(fullPath);
+            return null;
         }
 
-        /// <summary>Main run method for performing our calculations and storing data.</summary>
-        public void RunValidation()
+        /// <summary>From the list of columns read in, get a list of columns that match apsim variables.</summary>
+        public void GetAPSIMColumnsFromObserved()
         {
 
             Model model = storage as Model;
-            Simulations sims = model.FindAncestor<Simulations>();
 
             List<string> tableNames = new List<string>();
             List<string> inputNames = new List<string>();
@@ -237,7 +232,7 @@ namespace Models.PreSimulationTools
                 tableNames.Add(name);
                 inputNames.Add(Name);
             }
-
+            
             List<string> errors = new List<string>();
             List<string> columnNames = new List<string>();
             for (int i = 0; i < tableNames.Count; i++)
@@ -251,25 +246,12 @@ namespace Models.PreSimulationTools
                     string columnName = columnsNames[j];
                     if (NameIsAPSIMFormat(columnName))
                     {
-                        IVariable apsimVariable = NameMatchesAPSIMModel(columnName, sims);
-                        if (apsimVariable == null)
-                            errors.Add($"ObservedInput Error: {columnName} looks like an APSIM Variable, but does not match any models in simulations");
-                        else
-                            columnNames.Add(columnName);
+                        columnNames.Add(columnName);
                     }
                 }
             }
 
             ColumnNames = columnNames.ToArray();
-
-            if (errors.Count > 0)
-            {
-                string message = "Errors found in Observed data:\n";
-                for (int i = 0; i < errors.Count; i++)
-                    message += errors[i] += '\n';
-
-                throw new Exception(message);
-            }
             return;
         }
     }
