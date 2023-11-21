@@ -57,7 +57,7 @@ namespace Models
                 if (NameMatchesAPSIMModel(columnName) != null)
                     confirmedColumnNames.Add(columnName);
 
-            VariableNames = confirmedColumnNames.ToArray();
+            VariableNames = AddSquareBracketsToColumnName(confirmedColumnNames).ToArray();
 
             base.SubscribeToEvents();
         }
@@ -95,6 +95,19 @@ namespace Models
 
             IVariable variable = simulation.FindByPath(fullPath);
             return variable;
+        }
+
+        private List<string> AddSquareBracketsToColumnName(List<string> columnNames)
+        {
+            List<string> formattedColumnNames = new();
+            foreach (string columnName in columnNames)
+            {
+                string modelName = "[" + columnName;
+                modelName = modelName.Insert(modelName.IndexOf("."), "]");
+                formattedColumnNames.Add(modelName);
+
+            }
+            return formattedColumnNames;
         }
     }
 }
