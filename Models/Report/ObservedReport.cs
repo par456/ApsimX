@@ -11,8 +11,8 @@ namespace Models
     /// A ObservedReport class for creation of a report for showing observed and reported data.
     /// </summary>
     [Serializable]
-    [ViewName("UserInterface.Views.ReportView")]
-    [PresenterName("UserInterface.Presenters.ObservedReportPresenter")]
+    [ViewName("UserInterface.Views.PropertyView")]
+    [PresenterName("UserInterface.Presenters.PropertyPresenter")]
     [ValidParent(ParentType = typeof(Simulation))]
     public class ObservedReport : Report
     {
@@ -24,6 +24,14 @@ namespace Models
         /// <summary>Link to a storage service.</summary>
         [Link]
         private IDataStore storage = null;
+
+        /// <summary>
+        /// Gets or sets the file name to read from.
+        /// </summary>
+        [Description("Report Frequency")]
+        [Tooltip("When should this report be run?")]
+        [Display(Type = DisplayType.None)]
+        public string eventFrequency { get; set; }
 
         /// <summary>
         /// Connect event handlers.
@@ -43,11 +51,13 @@ namespace Models
         {
             //VariableNames = new string[] { "[Wheat].Leaf.Wt" };
             ColumnNames = (storage as Model).FindChild<ObservedInput>().ColumnNames;
-            EventNames = new string[] { "[Clock].EndOfDay" };
+            EventNames = new string[] { eventFrequency };
             List<string> confirmedColumnNames = new();
             foreach (string columnName in ColumnNames)
                 if (NameMatchesAPSIMModel(columnName) != null)
                     confirmedColumnNames.Add(columnName);
+
+            VariableNames = confirmedColumnNames.ToArray();
 
             base.SubscribeToEvents();
         }
@@ -64,7 +74,7 @@ namespace Models
         /// <summary>DO NOT use in pre-sim step, FindByPath uses links that break serialization</summary>
         private IVariable NameMatchesAPSIMModel(string columnName)
         {
-            Simulations sims = Parent as Simulations;
+            Simulation simulation = FindAncestor<Simulation>();
 
             string cleanedName = columnName;
             //strip ( ) out of columns that refer to arrays
@@ -75,17 +85,16 @@ namespace Models
             }
 
             string[] nameParts = cleanedName.Split('.');
-            IModel firstPart = sims.FindDescendant(nameParts[0]);
+            IModel firstPart = simulation.FindDescendant(nameParts[0]);
             if (firstPart == null)
                 return null;
 
-            sims.Links.Resolve(firstPart, true, true, false);
             string fullPath = firstPart.FullPath;
             for (int i = 1; i < nameParts.Length; i++)
                 fullPath += "." + nameParts[i];
 
-            IVariable variable = sims.FindByPath(fullPath);
-            return null;
+            IVariable variable = simulation.FindByPath(fullPath);
+            return variable;
         }
     }
 }
