@@ -65,6 +65,13 @@ namespace Models
         /// <summary>Group by variable name.</summary>
         public string GroupByVariableName { get; set; }
 
+        /// <summary>
+        /// Temporarily stores which tab is currently displayed.
+        /// Meaningful only within the GUI
+        /// </summary>
+        [JsonIgnore]
+        public int ActiveTabIndex = 0;
+
         //[Link]
         //private ObservedInput observedInput = null;
 
