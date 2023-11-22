@@ -149,12 +149,16 @@ namespace Models
             return newColumnNames;
         }
 
-        private string BuildQueryForSimulationData(string observedInputName, string simulationName)
+        private string BuildQueryForSimulationData(string observedInputName, int simulationID, string requiredColumn)
         {
             string query = string.Empty;
             query += "SELECT *\n";
-            query += "FROM " + observedInputName + "\n";
-            query += "WHERE SimulationID = " + simulationName + "\n";
+            query += $"FROM \"{observedInputName}\"\n";
+            query += $"WHERE SimulationID = {simulationID.ToString()}\n";
+
+            if (requiredColumn != null)
+                query += $"AND \"{requiredColumn}\" IS NOT NULL\n";
+
             return query;
         }
 
@@ -168,7 +172,7 @@ namespace Models
                 List<string> names = new List<string> { sim.Name };
                 List<int> ids = storage.Reader.ToSimulationIDs(names).ToList();
 
-                string query = BuildQueryForSimulationData(observedInput.SheetNames[i], ids[0].ToString());
+                string query = BuildQueryForSimulationData(observedInput.SheetNames[i], ids[0], fieldNameUsedForMatch);
                 DataTable predictedObservedData = storage.Reader.GetDataUsingSql(query);
 
                 for (int j = 0; j < predictedObservedData.Columns.Count; j++)
