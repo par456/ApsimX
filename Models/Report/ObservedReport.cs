@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using Models.Core;
 using Models.PreSimulationTools;
@@ -20,6 +21,8 @@ namespace Models
         /// <summary>Link to a storage service.</summary>
         [Link]
         private IDataStore storage = null;
+
+        private ObservedInput observedInput = null;
 
         /// <summary>
         /// Gets or sets the file name to read from.
@@ -45,19 +48,16 @@ namespace Models
         /// </summary>
         new protected void SubscribeToEvents()
         {
-            //VariableNames = new string[] { "[Wheat].Leaf.Wt" };
-            List<string> columnNames = (storage as Model).FindChild<ObservedInput>().ColumnNames.ToList();
+            observedInput = (storage as Model).FindChild<ObservedInput>();
+
+            List<string> columnNames = observedInput.ColumnNames.ToList();
+            columnNames = RemoveColumnsThatHaveNoData(columnNames);
             columnNames = RemoveExtraArrayColumns(columnNames);
-
-            EventNames = new string[] { eventFrequency };
-            List<string> confirmedColumnNames = new();
-            foreach (string columnName in columnNames)
-                if (NameMatchesAPSIMModel(columnName) != null)
-                    confirmedColumnNames.Add(columnName);
-
-            columnNames = AddSquareBracketsToColumnName(confirmedColumnNames);
+            columnNames = RemoveNonAPSIMVariables(columnNames);
+            columnNames = AddSquareBracketsToColumnName(columnNames);
 
             VariableNames = columnNames.ToArray();
+            EventNames = new string[] { eventFrequency };
 
             base.SubscribeToEvents();
         }
@@ -128,6 +128,59 @@ namespace Models
                     newColumnNames.Add(columnName);
                 }
             }
+            return newColumnNames;
+        }
+
+        private string BuildQueryForSimulationData(string observedInputName, string simulationName)
+        {
+            string query = string.Empty;
+            query += "SELECT *\n";
+            query += "FROM " + observedInputName + "\n";
+            query += "WHERE SimulationID = " + simulationName + "\n";
+            return query;
+        }
+
+        private List<string> RemoveColumnsThatHaveNoData(List<string> columnNames)
+        {
+            Simulation sim = FindAncestor<Simulation>();
+
+            List<string> newColumnNames = new List<string>();
+            for (int i = 0; i < observedInput.SheetNames.Length; i++)
+            {
+                List<string> names = new List<string> { sim.Name };
+                List<int> ids = storage.Reader.ToSimulationIDs(names).ToList();
+
+                string query = BuildQueryForSimulationData(observedInput.SheetNames[i], ids[0].ToString());
+                DataTable predictedObservedData = storage.Reader.GetDataUsingSql(query);
+
+                for (int j = 0; j < predictedObservedData.Columns.Count; j++)
+                {
+                    DataColumn col = predictedObservedData.Columns[j];
+                    string colName = col.ColumnName;
+                    int index = columnNames.IndexOf(colName);
+                    if (index > -1 && !newColumnNames.Contains(colName))
+                    {
+                        bool hasData = false;
+                        for (int k = 0; k < predictedObservedData.Rows.Count && !hasData; k++)
+                        {
+                            string value = predictedObservedData.Rows[k][col].ToString();
+                            if (value.Length > 0)
+                                hasData = true;
+                        }
+                        if (hasData)
+                            newColumnNames.Add(colName);
+                    }
+                }
+            }
+            return newColumnNames;
+        }
+
+        private List<string> RemoveNonAPSIMVariables(List<string> columnNames)
+        {
+            List<string> newColumnNames = new List<string>();
+            foreach (string columnName in columnNames)
+                if (NameMatchesAPSIMModel(columnName) != null)
+                    newColumnNames.Add(columnName);
             return newColumnNames;
         }
     }
