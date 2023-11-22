@@ -20,7 +20,7 @@ namespace Models.PreSimulationTools
     [ViewName("UserInterface.Views.PropertyView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
     [ValidParent(ParentType = typeof(DataStore))]
-    public class ObservedInput : Model, IPreSimulationTool, IReferenceExternalFiles
+    public class ObservedInput : Model, IPreSimulationTool, IReferenceExternalFiles, IObservedInput
     {
         private string[] filenames;
 
@@ -92,6 +92,7 @@ namespace Models.PreSimulationTools
         {
             get; private set;
         }
+
 
         /// <summary>Return our input filenames</summary>
         public IEnumerable<string> GetReferencedFileNames()
@@ -230,5 +231,6 @@ namespace Models.PreSimulationTools
             ColumnNames = columnNames.ToArray();
             return;
         }
+
     }
 }

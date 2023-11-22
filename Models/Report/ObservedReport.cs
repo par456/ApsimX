@@ -22,7 +22,7 @@ namespace Models
         [Link]
         private IDataStore storage = null;
 
-        private ObservedInput observedInput = null;
+        private IObservedInput observedInput = null;
 
         /// <summary> First field name used for match.</summary>
         private string fieldNameUsedForMatch;
@@ -66,7 +66,7 @@ namespace Models
         /// </summary>
         new protected void SubscribeToEvents()
         {
-            observedInput = (storage as Model).FindChild<ObservedInput>();
+            observedInput = (storage as Model).FindChild<IObservedInput>();
 
             List<string> columns = observedInput.ColumnNames.ToList();
             columns = RemoveColumnsThatHaveNoData(columns);
