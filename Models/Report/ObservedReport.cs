@@ -209,7 +209,10 @@ namespace Models
         {
             ObservedInput obs = (this.storage as Model).FindChild<ObservedInput>();
             string[] columnNames = obs.ColumnNames;
-            return columnNames;
+            if (columnNames == null)
+                return new string[0];
+            else
+                return columnNames;
         }
     }
 }
