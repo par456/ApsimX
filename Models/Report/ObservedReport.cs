@@ -24,13 +24,31 @@ namespace Models
 
         private ObservedInput observedInput = null;
 
+        /// <summary> First field name used for match.</summary>
+        private string fieldNameUsedForMatch;
+
         /// <summary>
         /// Gets or sets the file name to read from.
         /// </summary>
-        [Description("Report Frequency")]
-        [Tooltip("When should this report be run?")]
+        [Description("Report Frequency:")]
+        [Tooltip("Event this report collects data during")]
         [Display(Type = DisplayType.None)]
         public string eventFrequency { get; set; }
+
+        /// <summary>Gets or sets the field name used for match.</summary>
+        [Description("Filter for Rows with Column:")]
+        [Tooltip("When filtering columns to record, only rows with a value in the provided field will be considered")]
+        [Display(Type = DisplayType.DropDown, Values = nameof(GetColumnNames))]
+        public string FieldNameUsedForMatch
+        {
+            get { return fieldNameUsedForMatch; }
+            set
+            {
+                if (value == "")
+                    fieldNameUsedForMatch = null;
+                else fieldNameUsedForMatch = value;
+            }
+        }
 
         /// <summary>
         /// Connect event handlers.
@@ -50,13 +68,13 @@ namespace Models
         {
             observedInput = (storage as Model).FindChild<ObservedInput>();
 
-            List<string> columnNames = observedInput.ColumnNames.ToList();
-            columnNames = RemoveColumnsThatHaveNoData(columnNames);
-            columnNames = RemoveExtraArrayColumns(columnNames);
-            columnNames = RemoveNonAPSIMVariables(columnNames);
-            columnNames = AddSquareBracketsToColumnName(columnNames);
+            List<string> columns = observedInput.ColumnNames.ToList();
+            columns = RemoveColumnsThatHaveNoData(columns);
+            columns = RemoveExtraArrayColumns(columns);
+            columns = RemoveNonAPSIMVariables(columns);
+            columns = AddSquareBracketsToColumnName(columns);
 
-            VariableNames = columnNames.ToArray();
+            VariableNames = columns.ToArray();
             EventNames = new string[] { eventFrequency };
 
             base.SubscribeToEvents();
@@ -182,6 +200,16 @@ namespace Models
                 if (NameMatchesAPSIMModel(columnName) != null)
                     newColumnNames.Add(columnName);
             return newColumnNames;
+        }
+
+        /// <summary>
+        /// Returns all list of column names
+        /// </summary>
+        public string[] GetColumnNames()
+        {
+            ObservedInput obs = (this.storage as Model).FindChild<ObservedInput>();
+            string[] columnNames = obs.ColumnNames;
+            return columnNames;
         }
     }
 }
