@@ -156,7 +156,8 @@ namespace Models
             string query = string.Empty;
             query += "SELECT *\n";
             query += $"FROM \"{observedInputName}\"\n";
-            //query += $"WHERE SimulationID = {simulationID.ToString()}\n";
+            // TODO: Need to figure out why where clause causes db not to return anything.
+            query += $"WHERE SimulationID = {simulationID}\n";
 
             if (requiredColumn != null)
                 query += $"AND \"{requiredColumn}\" IS NOT NULL\n";
