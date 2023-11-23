@@ -66,15 +66,17 @@ namespace Models
         /// </summary>
         new protected void SubscribeToEvents()
         {
-            observedInput = (storage as Model).FindChild<IObservedInput>();
+            observedInput = (storage as Model).FindChild<ObservedInput>();
+            if (observedInput == null)
+                throw new Exception($"{this.Name} (ObservedReport) Error: ObservedReport requires a ObservedInput attached to the DataStore. An ObservedInput was not found.");
 
             List<string> columns = observedInput.ColumnNames.ToList();
             columns = RemoveColumnsThatHaveNoData(columns);
             columns = RemoveExtraArrayColumns(columns);
             columns = RemoveNonAPSIMVariables(columns);
             columns = AddSquareBracketsToColumnName(columns);
-
             VariableNames = columns.ToArray();
+
             EventNames = new string[] { eventFrequency };
 
             base.SubscribeToEvents();
@@ -172,26 +174,37 @@ namespace Models
                 List<string> names = new List<string> { sim.Name };
                 List<int> ids = storage.Reader.ToSimulationIDs(names).ToList();
 
-                string query = BuildQueryForSimulationData(observedInput.SheetNames[i], ids[0], fieldNameUsedForMatch);
-                DataTable predictedObservedData = storage.Reader.GetDataUsingSql(query);
-
-                for (int j = 0; j < predictedObservedData.Columns.Count; j++)
+                if (ids.Count == 1)
                 {
-                    DataColumn col = predictedObservedData.Columns[j];
-                    string colName = col.ColumnName;
-                    int index = columnNames.IndexOf(colName);
-                    if (index > -1 && !newColumnNames.Contains(colName))
+                    string query = BuildQueryForSimulationData(observedInput.SheetNames[i], ids[0], fieldNameUsedForMatch);
+                    DataTable predictedObservedData = storage.Reader.GetDataUsingSql(query);
+
+                    for (int j = 0; j < predictedObservedData.Columns.Count; j++)
                     {
-                        bool hasData = false;
-                        for (int k = 0; k < predictedObservedData.Rows.Count && !hasData; k++)
+                        DataColumn col = predictedObservedData.Columns[j];
+                        string colName = col.ColumnName;
+                        int index = columnNames.IndexOf(colName);
+                        if (index > -1 && !newColumnNames.Contains(colName))
                         {
-                            string value = predictedObservedData.Rows[k][col].ToString();
-                            if (value.Length > 0)
-                                hasData = true;
+                            bool hasData = false;
+                            for (int k = 0; k < predictedObservedData.Rows.Count && !hasData; k++)
+                            {
+                                string value = predictedObservedData.Rows[k][col].ToString();
+                                if (value.Length > 0)
+                                    hasData = true;
+                            }
+                            if (hasData)
+                                newColumnNames.Add(colName);
                         }
-                        if (hasData)
-                            newColumnNames.Add(colName);
                     }
+                }
+                else if (ids.Count > 1)
+                {
+                    throw new Exception($"{this.Name} (ObservedReport) Error: Simulation {sim.Name} has more than one ID");
+                }
+                else
+                {
+                    throw new Exception($"{this.Name} (ObservedReport) Error: Simulation {sim.Name} cannot be found in the {observedInput.SheetNames[i]} table. Make sure the name of the simulation matches, or remove the ObservedReport from this simulation.");
                 }
             }
             return newColumnNames;
