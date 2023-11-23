@@ -76,27 +76,21 @@ namespace UnitTests.Observed
             Utilities.InitialiseModel(sims);
             Simulation sim = sims.FindInScope<Simulation>();
             sim.Name = "Sim1";
+            // Remove Report as it removes tables from DataStore for an unknown reason?
+            Models.Report report = sim.FindInScope<Models.Report>();
             DataStore storage = sim.FindInScope<DataStore>();
             Clock clock = sim.FindInScope<Clock>();
 
-            // TODO: relocate these after simulationID finding bug is fixed.
-            AddTableToDataStore(storage as DataStore);
+            AddTableToDataStore(storage);
             storage.Children.Add(new MockObservedInput());
-
-            sim.Children.Add(new ObservedReport() { EventNames = new string[] { "[Clock].EndOfDay" } });
+            sim.Children.Add(new ObservedReport() { EventFrequency = "[Clock].EndOfDay" });
 
             Runner runner = new Runner(sims);
-
-
             List<Exception> errors = runner.Run();
-
-            /*
-
-            Runner runner2 = new Runner(sims);
-            List<Exception> errors2 = runner2.Run();
-            var data = storage.Reader.GetData("observedPredicted");
+            var data = storage.Reader.GetData("ObservedReport");
+            // TODO: Needs to test that atleast one row is not empty.
             Assert.NotNull(data);
-            */
+
         }
 
         //        /// <summary>
