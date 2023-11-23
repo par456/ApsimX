@@ -1,10 +1,9 @@
 ﻿namespace UnitTests.Report
 {
-    using APSIM.Shared.Utilities;
-    using Models.Storage;
-    using NUnit.Framework;
     using System;
     using System.Collections.Generic;
+    using Models.Storage;
+    using NUnit.Framework;
 
     [TestFixture]
     public class ReportDataTests
@@ -29,14 +28,14 @@
                 SimulationName = "Sim1",
                 TableName = "Report",
                 ColumnNames = new string[] { "Col1", "Col2", "Col3", "Col4" },
-                ColumnUnits = new string[] {   null,   null, "g/m2",   "mm" }
+                ColumnUnits = new string[] { null, null, "g/m2", "mm" }
             };
 
             data.Rows.Add(new List<object>() { new DateTime(2017, 1, 1), 1.0, 1, "abc" });
             data.Rows.Add(new List<object>() { new DateTime(2017, 1, 2), 2.0, 2, "def" });
 
             Assert.IsTrue(
-                    Utilities.CreateTable(new string[]                      {                   "Col1", "Col2", "Col3", "Col4" },
+                    Utilities.CreateTable(new string[] { "Col1", "Col2", "Col3", "Col4" },
                                           new List<object[]> { new object[] { new DateTime(2017, 1, 1),    1.0,      1,  "abc"},
                                                                new object[] { new DateTime(2017, 1, 2),    2.0,      2,  "def"} })
                    .IsSame(data.ToTable()));
@@ -52,14 +51,14 @@
                 SimulationName = "Sim1",
                 TableName = "Report",
                 ColumnNames = new string[] { "Col", "Zones(1).WaterUptake" },
-                ColumnUnits = new string[] {  "mm",    "g" }
+                ColumnUnits = new string[] { "mm", "g" }
             };
 
-            data.Rows.Add(new List<object>() { new int[] { 1, 2    }, new double[] { 3.0, 4.0 } });
+            data.Rows.Add(new List<object>() { new int[] { 1, 2 }, new double[] { 3.0, 4.0 } });
             data.Rows.Add(new List<object>() { new int[] { 5, 6, 7 }, new double[] { 8.0, 9.0 } });
 
             Assert.IsTrue(
-                    Utilities.CreateTable(new string[]                      { "Col(1)", "Col(2)", "Zones(1).WaterUptake(1)", "Zones(1).WaterUptake(2)",        "Col(3)" },
+                    Utilities.CreateTable(new string[] { "Col(1)", "Col(2)", "Zones(1).WaterUptake(1)", "Zones(1).WaterUptake(2)", "Col(3)" },
                                           new List<object[]> { new object[] {        1,      2.0,                         3,                         4, Convert.DBNull},
                                                                new object[] {        5,      6.0,                         8,                         9,              7}})
                    .IsSame(data.ToTable()));
@@ -83,7 +82,7 @@
 
 
             Assert.IsTrue(
-                    Utilities.CreateTable(new string[]                      {       "Col(1)",       "Col(2)",        "Col(3)" },
+                    Utilities.CreateTable(new string[] { "Col(1)", "Col(2)", "Col(3)" },
                                           new List<object[]> { new object[] { Convert.DBNull, Convert.DBNull, Convert.DBNull },
                                                                new object[] {              1,              2,              3 }})
                    .IsSame(data.ToTable()));
@@ -127,7 +126,7 @@
 
 
             Assert.IsTrue(
-                    Utilities.CreateTable(new string[]                      {   "Col1.a", "Col1.b(1).c", "Col1.b(2).c" },
+                    Utilities.CreateTable(new string[] { "Col1.a", "Col1.b(1).c", "Col1.b(2).c" },
                                           new List<object[]> { new object[] {          1,             2,            3 },
                                                                new object[] {          4,             5,            6 }})
                    .IsSame(data.ToTable()));

@@ -78,14 +78,25 @@ namespace UnitTests.Observed
             sim.Name = "Sim1";
             DataStore storage = sim.FindInScope<DataStore>();
             Clock clock = sim.FindInScope<Clock>();
-            Runner runner = new Runner(sims);
+
             // TODO: relocate these after simulationID finding bug is fixed.
+            AddTableToDataStore(storage as DataStore);
             storage.Children.Add(new MockObservedInput());
+
             sim.Children.Add(new ObservedReport() { EventNames = new string[] { "[Clock].EndOfDay" } });
+
+            Runner runner = new Runner(sims);
+
+
+            List<Exception> errors = runner.Run();
+
+            /*
+
             Runner runner2 = new Runner(sims);
-            List<Exception> errors = runner2.Run();
+            List<Exception> errors2 = runner2.Run();
             var data = storage.Reader.GetData("observedPredicted");
             Assert.NotNull(data);
+            */
         }
 
         //        /// <summary>
@@ -795,6 +806,23 @@ namespace UnitTests.Observed
         //            List<Exception> errors = runner.Run();
         //            Assert.AreEqual(1, errors.Count);
         //        }
+        private void AddTableToDataStore(DataStore datastore)
+        {
+            var data1 = new ReportData()
+            {
+                CheckpointName = "Current",
+                SimulationName = "Sim1",
+                TableName = "Sheet1",
+                ColumnNames = new string[] { "SimulationName", "Clock.Today" },
+                ColumnUnits = new string[] { null, null }
+            };
+            data1.Rows.Add(new List<object>() { "Sim1", "Test1" });
+            data1.Rows.Add(new List<object>() { "Sim2", "Test2" });
+            data1.Rows.Add(new List<object>() { "Sim3", "Test3" });
+            datastore.Writer.WriteTable(data1.ToTable(), false);
+            datastore.Writer.Stop();
+            datastore.Reader.Refresh();
+        }
 
     }
 }

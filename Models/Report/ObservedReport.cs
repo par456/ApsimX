@@ -66,6 +66,10 @@ namespace Models
         /// </summary>
         new protected void SubscribeToEvents()
         {
+
+            string query = "SELECT * FROM Sheet1";
+            DataTable predictedObservedData = storage.Reader.GetDataUsingSql(query);
+
             observedInput = (storage as Model).FindChild<IObservedInput>();
             if (observedInput == null)
                 throw new Exception($"{this.Name} (ObservedReport) Error: ObservedReport requires a ObservedInput attached to the DataStore. An ObservedInput was not found.");
@@ -156,7 +160,7 @@ namespace Models
             string query = string.Empty;
             query += "SELECT *\n";
             query += $"FROM \"{observedInputName}\"\n";
-            query += $"WHERE SimulationID = {simulationID.ToString()}\n";
+            //query += $"WHERE SimulationID = {simulationID.ToString()}\n";
 
             if (requiredColumn != null)
                 query += $"AND \"{requiredColumn}\" IS NOT NULL\n";
