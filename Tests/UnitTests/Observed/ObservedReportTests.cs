@@ -11,59 +11,60 @@ namespace UnitTests.Observed
     [TestFixture]
     public class ObservedReportTests
     {
-        private Simulations simulations;
-        private Simulation simulation;
-        private IClock clock;
-        private DataStore storage;
-        private Runner runner;
-        private ObservedReport observedReport;
-        private MockObservedInput observedInput;
+        //private Simulations sims;
+        //private Simulation sim;
+        //private IClock clock;
+        //private DataStore storage;
+        //private Runner runner;
+        //private ObservedReport observedReport;
+        //private MockObservedInput observedInput;
 
-        /// <summary>
-        /// Creates a simulation and links to various models. Used by all tests.
-        /// </summary>
-        [SetUp]
-        public void Setup()
-        {
-            simulations = new Simulations()
-            {
-                Children = new List<IModel>()
-                {
-                    new Simulation()
-                    {
-                        Children = new List<IModel>()
-                        {
-                            new DataStore()
-                            {
-                                Children = new List<IModel>()
-                                {
-                                    new MockObservedInput()
-                                }
-                            },
-                            new Summary(),
-                            new Clock()
-                            {
-                                StartDate = new DateTime(2017, 1, 1),
-                                EndDate = new DateTime(2017, 1, 10)
-                            },
-                            new ObservedReport()
-                            {
-                                VariableNames = new string[] { },
-                                EventNames = new string[] { "[Clock].EndOfDay" },
-                            }
-                        }
-                    }
-                }
-            };
+        ///// <summary>
+        ///// Creates a simulation and links to various models. Used by all tests.
+        ///// </summary>
+        //[SetUp]
+        //public void Setup()
+        //{
+        //    sims = Utilities.GetRunnableSim();
+        //    //    simulations = new Simulations()
+        //    //    {
+        //    //        Children = new List<IModel>()
+        //    //        {
+        //    //            new Simulation()
+        //    //            {
+        //    //                Children = new List<IModel>()
+        //    //                {
+        //    //                    new DataStore()
+        //    //                    {
+        //    //                        Children = new List<IModel>()
+        //    //                        {
+        //    //                            //new MockObservedInput()
+        //    //                        }
+        //    //                    },
+        //    //                    new Summary(),
+        //    //                    new Clock()
+        //    //                    {
+        //    //                        StartDate = new DateTime(2017, 1, 1),
+        //    //                        EndDate = new DateTime(2017, 1, 10)
+        //    //                    },
+        //    //                    //new ObservedReport()
+        //    //                    //{
+        //    //                    //    VariableNames = new string[] { },
+        //    //                    //    EventNames = new string[] { "[Clock].EndOfDay" },
+        //    //                    //}
+        //    //                }
+        //    //            }
+        //    //        }
+        //    //    };
 
-            Utilities.InitialiseModel(simulations);
-            simulation = simulations.Children[0] as Simulation;
-            runner = new Runner(simulations);
-            storage = simulation.Children[0] as DataStore;
-            observedInput = storage.Children[0] as MockObservedInput;
-            clock = simulation.Children[2] as Clock;
-            observedReport = simulation.Children[2] as ObservedReport;
-        }
+        //    Utilities.InitialiseModel(sims);
+        //    sim = sims.FindInScope<Simulation>();
+        //    runner = new Runner(sims);
+        //    storage = sim.FindInScope<DataStore>();
+        //    //observedInput = storage.Children[0] as MockObservedInput;
+        //    clock = sim.FindInScope<Clock>();
+        //    //observedReport = simulation.Children[2] as ObservedReport;
+        //}
 
         /// <summary>
         /// Ensure an ObservedPredicted table exists after file is run.
@@ -71,7 +72,18 @@ namespace UnitTests.Observed
         [Test]
         public void EnsureObservedReportTableCreated()
         {
-            List<Exception> errors = runner.Run();
+            Simulations sims = Utilities.GetRunnableSim();
+            Utilities.InitialiseModel(sims);
+            Simulation sim = sims.FindInScope<Simulation>();
+            sim.Name = "Sim1";
+            DataStore storage = sim.FindInScope<DataStore>();
+            Clock clock = sim.FindInScope<Clock>();
+            Runner runner = new Runner(sims);
+            // TODO: relocate these after simulationID finding bug is fixed.
+            storage.Children.Add(new MockObservedInput());
+            sim.Children.Add(new ObservedReport() { EventNames = new string[] { "[Clock].EndOfDay" } });
+            Runner runner2 = new Runner(sims);
+            List<Exception> errors = runner2.Run();
             var data = storage.Reader.GetData("observedPredicted");
             Assert.NotNull(data);
         }

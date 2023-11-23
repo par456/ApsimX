@@ -212,11 +212,18 @@ namespace Models
         public string[] GetColumnNames()
         {
             ObservedInput obs = (this.storage as Model).FindChild<ObservedInput>();
-            string[] columnNames = obs.ColumnNames;
-            if (columnNames == null)
-                return new string[0];
+            if (obs != null)
+            {
+                string[] columnNames = obs.ColumnNames;
+                if (columnNames == null)
+                    return new string[0];
+                else
+                    return columnNames;
+            }
             else
-                return columnNames;
+            {
+                return null;
+            }
         }
     }
 }
