@@ -33,7 +33,7 @@ namespace Models
         [Description("Report Frequency:")]
         [Tooltip("Event this report collects data during")]
         [Display(Type = DisplayType.None)]
-        public string eventFrequency { get; set; }
+        public string EventFrequency { get; set; }
 
         /// <summary>Gets or sets the field name used for match.</summary>
         [Description("Filter for Rows with Column:")]
@@ -66,10 +66,6 @@ namespace Models
         /// </summary>
         new protected void SubscribeToEvents()
         {
-
-            string query = "SELECT * FROM Sheet1";
-            DataTable predictedObservedData = storage.Reader.GetDataUsingSql(query);
-
             observedInput = (storage as Model).FindChild<IObservedInput>();
             if (observedInput == null)
                 throw new Exception($"{this.Name} (ObservedReport) Error: ObservedReport requires a ObservedInput attached to the DataStore. An ObservedInput was not found.");
@@ -81,7 +77,7 @@ namespace Models
             columns = AddSquareBracketsToColumnName(columns);
             VariableNames = columns.ToArray();
 
-            EventNames = new string[] { eventFrequency };
+            EventNames = new string[] { EventFrequency };
 
             base.SubscribeToEvents();
         }
