@@ -110,7 +110,7 @@ namespace Models
         /// <summary>
         /// Subscribe to events provided
         /// </summary>
-        protected void SubscribeToEvents()
+        public void SubscribeToEvents()
         {
             // Cleanup event names.
             EventNames = TidyUpEventNames();

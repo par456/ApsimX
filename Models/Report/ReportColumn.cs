@@ -328,6 +328,7 @@ namespace Models
             }
             catch (Exception)
             {
+                throw new Exception("ReportColumn Error: Try and get units failed");
             }
 
             if (string.IsNullOrEmpty(fromString))

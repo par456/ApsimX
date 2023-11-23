@@ -67,7 +67,7 @@ namespace ApsimNG.Presenters
                 dataStorePresenter.SimulationFilter = simulation;
 
             dataStorePresenter.Attach(dataStore, this.view.DataStoreView, explorerPresenter);
-            this.view.TabIndex = this.observedReport.ActiveTabIndex;
+            this.view.TabIndex = 0;
 
         }
 
