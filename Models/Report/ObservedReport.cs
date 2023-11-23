@@ -66,7 +66,7 @@ namespace Models
         /// </summary>
         new protected void SubscribeToEvents()
         {
-            observedInput = (storage as Model).FindChild<ObservedInput>();
+            observedInput = (storage as Model).FindChild<IObservedInput>();
             if (observedInput == null)
                 throw new Exception($"{this.Name} (ObservedReport) Error: ObservedReport requires a ObservedInput attached to the DataStore. An ObservedInput was not found.");
 
