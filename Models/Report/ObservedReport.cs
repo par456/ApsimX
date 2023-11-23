@@ -16,13 +16,19 @@ namespace Models
     [ViewName("UserInterface.Views.PropertyView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
     [ValidParent(ParentType = typeof(Simulation))]
-    public class ObservedReport : Report
+    public class ObservedReport : Model
     {
-        /// <summary>Link to a storage service.</summary>
+        /// <summary>Link to the DataStore</summary>
         [Link]
-        private IDataStore storage = null;
+        private DataStore storage = null;
 
-        private IObservedInput observedInput = null;
+        /// <summary>Link to the DataStore</summary>
+        [Link]
+        private Simulation simulation = null;
+
+        private ObservedInput observedInput = null;
+
+        private Report report = null;
 
         /// <summary> First field name used for match.</summary>
         private string fieldNameUsedForMatch;
@@ -56,17 +62,17 @@ namespace Models
         /// <param name="sender">Sender object..</param>
         /// <param name="args">Event data.</param>
         [EventSubscribe("SubscribeToEvents")]
-        private void OnConnectToEvents(object sender, EventArgs args)
+        public void OnConnectToEvents(object sender, EventArgs args)
         {
-            SubscribeToEvents();
-        }
+            report = new Report();
+            report.Name = this.Name;
+            report.Parent = this;
+            this.Children.Add(report);
 
-        /// <summary>
-        /// Subscribe to events provided
-        /// </summary>
-        new protected void SubscribeToEvents()
-        {
-            observedInput = (storage as Model).FindChild<IObservedInput>();
+            var links = new Links(simulation.Services);
+            links.Resolve(report, true, throwOnFail: true);
+
+            observedInput = (storage as Model).FindChild<ObservedInput>();
             if (observedInput == null)
                 throw new Exception($"{this.Name} (ObservedReport) Error: ObservedReport requires a ObservedInput attached to the DataStore. An ObservedInput was not found.");
 
@@ -75,20 +81,11 @@ namespace Models
             columns = RemoveExtraArrayColumns(columns);
             columns = RemoveNonAPSIMVariables(columns);
             columns = AddSquareBracketsToColumnName(columns);
-            VariableNames = columns.ToArray();
+            report.VariableNames = columns.ToArray();
 
-            EventNames = new string[] { EventFrequency };
+            report.EventNames = new string[] { EventFrequency };
 
-            base.SubscribeToEvents();
-        }
-
-        /// <summary>Invoked when a simulation is completed.</summary>
-        /// <param name="sender">Event sender</param>
-        /// <param name="e">Event arguments</param>
-        [EventSubscribe("Completed")]
-        new protected void OnCompleted(object sender, EventArgs e)
-        {
-            base.OnCompleted(sender, e);
+            report.SubscribeToEvents();
         }
 
         /// <summary>DO NOT use in pre-sim step, FindByPath uses links that break serialization</summary>
@@ -156,7 +153,7 @@ namespace Models
             string query = string.Empty;
             query += "SELECT *\n";
             query += $"FROM \"{observedInputName}\"\n";
-            //query += $"WHERE SimulationID = {simulationID.ToString()}\n";
+            query += $"WHERE SimulationID = {simulationID.ToString()}\n";
 
             if (requiredColumn != null)
                 query += $"AND \"{requiredColumn}\" IS NOT NULL\n";
