@@ -70,7 +70,9 @@ namespace Models.PreSimulationTools
             set
             {
                 if (value == null)
+                {
                     sheetNames = new string[0];
+                }
                 else
                 {
                     string[] formattedSheetNames = new string[value.Length];

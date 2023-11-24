@@ -16,6 +16,9 @@ namespace Models
     [ViewName("UserInterface.Views.PropertyView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
     [ValidParent(ParentType = typeof(Simulation))]
+    [ValidParent(ParentType = typeof(Zone))]
+    [ValidParent(ParentType = typeof(Zones.CircularZone))]
+    [ValidParent(ParentType = typeof(Zones.RectangularZone))]
     public class ObservedReport : Model
     {
         /// <summary>Link to the DataStore</summary>
@@ -74,7 +77,7 @@ namespace Models
 
             observedInput = (storage as Model).FindChild<IObservedInput>();
             if (observedInput == null)
-                throw new Exception($"{this.Name} (ObservedReport) Error: ObservedReport requires a ObservedInput attached to the DataStore. An ObservedInput was not found.");
+                throw new MissingObservedInputException($"{this.Name} (ObservedReport) Error: ObservedReport requires a ObservedInput attached to the DataStore. An ObservedInput was not found.");
 
             List<string> columns = observedInput.ColumnNames.ToList();
             columns = RemoveColumnsThatHaveNoData(columns);

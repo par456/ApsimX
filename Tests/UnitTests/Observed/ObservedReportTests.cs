@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Data;
 using APSIM.Shared.Utilities;
-using Models;
 using Models.Core;
 using Models.Core.ApsimFile;
 using Models.Core.Run;
@@ -20,28 +19,13 @@ namespace UnitTests.Observed
         [Test]
         public void EnsureObservedReportTableCreated()
         {
-            string json = ReflectionUtilities.GetResourceAsString("UnitTests.Observed.observedTest2.apsimx");
+            // Creating a simulation file from scratch in code was attempted. This proved problematic.
+            string json = ReflectionUtilities.GetResourceAsString("UnitTests.Observed.observedTest1.apsimx");
             Simulations sims = FileFormat.ReadFromString<Simulations>(json, e => throw e, false).NewModel as Simulations;
 
             Simulation sim = sims.FindInScope<Simulation>();
             DataStore storage = sim.FindInScope<DataStore>();
             storage.Children.Add(new MockObservedInput());
-
-            /*
-            Simulation sim = sims.FindInScope<Simulation>();
-            sim.Name = "Sim1";
-            DataStore storage = sim.FindInScope<DataStore>();
-
-            // Remove Report as it removes tables from DataStore for an unknown reason?
-            Models.Report report = sim.FindInScope<Models.Report>();
-            sim.Children.Remove(report);
-
-            storage.Children.Add(new MockObservedInput());
-            sim.Children.Add(new ObservedReport() { Name = "ObservedReport", EventFrequency = "[Clock].EndOfDay" });
-
-            //Do all setup before calling this
-            Utilities.InitialiseModel(sims);
-            */
 
             // Data is created this way to avoid pulling in data from a excel sheet.
             var data1 = new ReportData()
@@ -74,25 +58,22 @@ namespace UnitTests.Observed
         [Test]
         public void EnsureUnmatchedSimNamesDoNotShowInObservedReport()
         {
-            Simulations sims = Utilities.GetRunnableSim();
-            Utilities.InitialiseModel(sims);
+            // Creating a simulation file from scratch in code was attempted. This proved problematic.
+            string json = ReflectionUtilities.GetResourceAsString("UnitTests.Observed.observedTest2.apsimx");
+            Simulations sims = FileFormat.ReadFromString<Simulations>(json, e => throw e, false).NewModel as Simulations;
+
             Simulation sim = sims.FindInScope<Simulation>();
-            sim.Name = "Sim1";
-            // Remove Report as it removes tables from DataStore for an unknown reason?
-            Models.Report report = sim.FindInScope<Models.Report>();
-            sim.Children.Remove(report);
             DataStore storage = sim.FindInScope<DataStore>();
             storage.Children.Add(new MockObservedInput());
-            sim.Children.Add(new ObservedReport() { EventFrequency = "[Clock].EndOfDay" });
 
             // Data is created this way to avoid pulling in data from a excel sheet.
             var data1 = new ReportData()
             {
                 // CheckpointName is required.
                 CheckpointName = "Current",
-                SimulationName = sim.Name,
+                SimulationName = "Sim1",
                 TableName = "Sheet1",
-                ColumnNames = new string[] { "SimulationName", "Clock.EndOfDay" },
+                ColumnNames = new string[] { "SimulationName", "Clock.Today" },
                 ColumnUnits = new string[] { null, null }
             };
             data1.Rows.Add(new List<object>() { "Sim1", "Test1" });
@@ -118,6 +99,19 @@ namespace UnitTests.Observed
             else Assert.Fail("No rows found in ObservedReport Table.");
         }
 
+
+        [Test]
+        public void EnsureExceptionWhenObservedInputMissing()
+        {
+            string json = ReflectionUtilities.GetResourceAsString("UnitTests.Observed.observedTest3.apsimx");
+            Simulations sims = FileFormat.ReadFromString<Simulations>(json, e => throw e, false).NewModel as Simulations;
+
+            Simulation sim = sims.FindInScope<Simulation>();
+            DataStore storage = sim.FindInScope<DataStore>();
+            Runner runner = new Runner(sim);
+            List<Exception> errors = runner.Run();
+            Assert.IsTrue(errors.Count > 0);
+        }
 
         /// <summary>
         /// Helper to add tables to datastore. Used avoid using an excel sheet.
