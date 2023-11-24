@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using APSIM.Shared.Utilities;
 using Models;
 using Models.Core;
+using Models.Core.ApsimFile;
 using Models.Core.Run;
 using Models.Storage;
 using NUnit.Framework;
@@ -18,16 +20,29 @@ namespace UnitTests.Observed
         [Test]
         public void EnsureObservedReportTableCreated()
         {
-            Simulations sims = Utilities.GetRunnableSim();
-            Utilities.InitialiseModel(sims);
+            string json = ReflectionUtilities.GetResourceAsString("UnitTests.Observed.observedTest2.apsimx");
+            Simulations sims = FileFormat.ReadFromString<Simulations>(json, e => throw e, false).NewModel as Simulations;
+
+            Simulation sim = sims.FindInScope<Simulation>();
+            DataStore storage = sim.FindInScope<DataStore>();
+            storage.Children.Add(new MockObservedInput());
+
+            /*
             Simulation sim = sims.FindInScope<Simulation>();
             sim.Name = "Sim1";
+            DataStore storage = sim.FindInScope<DataStore>();
+
             // Remove Report as it removes tables from DataStore for an unknown reason?
             Models.Report report = sim.FindInScope<Models.Report>();
             sim.Children.Remove(report);
-            DataStore storage = sim.FindInScope<DataStore>();
+
             storage.Children.Add(new MockObservedInput());
-            sim.Children.Add(new ObservedReport() { EventFrequency = "[Clock].EndOfDay" });
+            sim.Children.Add(new ObservedReport() { Name = "ObservedReport", EventFrequency = "[Clock].EndOfDay" });
+
+            //Do all setup before calling this
+            Utilities.InitialiseModel(sims);
+            */
+
             // Data is created this way to avoid pulling in data from a excel sheet.
             var data1 = new ReportData()
             {
