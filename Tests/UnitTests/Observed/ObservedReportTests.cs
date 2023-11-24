@@ -35,7 +35,7 @@ namespace UnitTests.Observed
                 CheckpointName = "Current",
                 SimulationName = "Sim1",
                 TableName = "Sheet1",
-                ColumnNames = new string[] { "SimulationName", "Clock.EndOfDay" },
+                ColumnNames = new string[] { "SimulationName", "Clock.Today" },
                 ColumnUnits = new string[] { null, null }
             };
             data1.Rows.Add(new List<object>() { "Sim1", "Test1" });
