@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Text.Json.Serialization;
 using Models.Core;
 using Models.PreSimulationTools;
 using Models.Storage;
@@ -31,6 +32,7 @@ namespace Models
 
         private IObservedInput observedInput = null;
 
+        [JsonIgnore]
         private Report report = null;
 
         /// <summary> First field name used for match.</summary>
@@ -94,7 +96,13 @@ namespace Models
         /// <summary>DO NOT use in pre-sim step, FindByPath uses links that break serialization</summary>
         private IVariable NameMatchesAPSIMModel(string columnName)
         {
-            Simulation simulation = FindAncestor<Simulation>();
+            Model zone = FindAncestor<Zone>();
+            if (zone == null)
+                zone = FindAncestor<Zones.CircularZone>();
+            if (zone == null)
+                zone = FindAncestor<Zones.RectangularZone>();
+
+            Simulation sim = FindAncestor<Simulation>();
 
             string cleanedName = columnName;
             //strip ( ) out of columns that refer to arrays
@@ -105,7 +113,26 @@ namespace Models
             }
 
             string[] nameParts = cleanedName.Split('.');
-            IModel firstPart = simulation.FindDescendant(nameParts[0]);
+            IModel firstPart = null;
+            if (zone != null)
+                firstPart = zone.FindDescendant(nameParts[0]);
+
+            if (firstPart == null)
+                firstPart = sim.FindDescendant(nameParts[0]);
+
+            if (zone != null)
+            {
+                Model modelZone = firstPart.FindAncestor<Zone>();
+                if (modelZone == null)
+                    modelZone = firstPart.FindAncestor<Zones.CircularZone>();
+                if (modelZone == null)
+                    modelZone = firstPart.FindAncestor<Zones.RectangularZone>();
+
+                if (modelZone != null)
+                    if (zone != modelZone)
+                        return null;
+            }
+
             if (firstPart == null)
                 return null;
 
@@ -113,7 +140,7 @@ namespace Models
             for (int i = 1; i < nameParts.Length; i++)
                 fullPath += "." + nameParts[i];
 
-            IVariable variable = simulation.FindByPath(fullPath);
+            IVariable variable = sim.FindByPath(fullPath);
             return variable;
         }
 
