@@ -38,9 +38,9 @@ namespace UnitTests.Observed
                 ColumnNames = new string[] { "SimulationName", "Clock.EndOfDay" },
                 ColumnUnits = new string[] { null, null }
             };
-            data1.Rows.Add(new List<object>() { "Sim1", new DateTime(2017, 1, 10) });
-            data1.Rows.Add(new List<object>() { "Sim2", new DateTime(2017, 1, 10) });
-            data1.Rows.Add(new List<object>() { "Sim3", new DateTime(2017, 1, 10) });
+            data1.Rows.Add(new List<object>() { "Sim1", "Test1" });
+            data1.Rows.Add(new List<object>() { "Sim2", "Test2" });
+            data1.Rows.Add(new List<object>() { "Sim3", "Test3" });
 
             AddTableToDataStore(storage, data1);
 

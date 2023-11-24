@@ -26,7 +26,7 @@ namespace Models
         [Link]
         private Simulation simulation = null;
 
-        private ObservedInput observedInput = null;
+        private IObservedInput observedInput = null;
 
         private Report report = null;
 
@@ -72,7 +72,7 @@ namespace Models
             var links = new Links(simulation.Services);
             links.Resolve(report, true, throwOnFail: true);
 
-            observedInput = (storage as Model).FindChild<ObservedInput>();
+            observedInput = (storage as Model).FindChild<IObservedInput>();
             if (observedInput == null)
                 throw new Exception($"{this.Name} (ObservedReport) Error: ObservedReport requires a ObservedInput attached to the DataStore. An ObservedInput was not found.");
 
@@ -154,7 +154,7 @@ namespace Models
             query += "SELECT *\n";
             query += $"FROM \"{observedInputName}\"\n";
             // TODO: Need to figure out why where clause causes db not to return anything.
-            query += $"WHERE SimulationID = {simulationID}\n";
+            //query += $"WHERE SimulationID = {simulationID}\n";
 
             if (requiredColumn != null)
                 query += $"AND \"{requiredColumn}\" IS NOT NULL\n";
