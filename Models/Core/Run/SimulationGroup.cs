@@ -81,7 +81,7 @@ namespace Models.Core.Run
                 //when it comes time to run.
                 this.relativeTo = relativeTo.FindAncestor<Simulations>();
             }
-            
+
             if (simulationNamePatternMatch != null)
                 patternMatch = new Regex(simulationNamePatternMatch);
 
@@ -120,18 +120,19 @@ namespace Models.Core.Run
         /// I'm not sure that this really belongs here, but since this class
         /// handles the running of post-simulation tools, it kind of has to be here.
         /// </remarks>
-        public string Status {
+        public string Status
+        {
             get
-            { 
+            {
                 if (_status.StartsWith("Waiting for datastore"))
                 {
                     return _status + " - " + storage.Writer.CommandCount().ToString() + " operations remaining";
                 }
-                return _status; 
+                return _status;
             }
-            private set 
-            { 
-                _status = value; 
+            private set
+            {
+                _status = value;
             }
         }
 
@@ -460,7 +461,7 @@ namespace Models.Core.Run
                 catch (Exception err)
                 {
                     exception = err;
-                    AddException(new Exception("Encountered an error while running test " + testName, err));
+                    AddException(new Exception("Encountered an error while running test " + testName + " (" + FileName + ")", err));
                 }
             }
         }
