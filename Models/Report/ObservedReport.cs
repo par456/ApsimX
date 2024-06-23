@@ -14,8 +14,8 @@ namespace Models
     /// A ObservedReport class for creation of a report for showing observed and reported data.
     /// </summary>
     [Serializable]
-    [ViewName("UserInterface.Views.PropertyView")]
-    [PresenterName("UserInterface.Presenters.PropertyPresenter")]
+    [ViewName("UserInterface.Views.ObservedReportView")]
+    [PresenterName("UserInterface.Presenters.ObservedReportPresenter")]
     [ValidParent(ParentType = typeof(Simulation))]
     [ValidParent(ParentType = typeof(Zone))]
     [ValidParent(ParentType = typeof(Zones.CircularZone))]
@@ -31,6 +31,13 @@ namespace Models
         private Simulation simulation = null;
 
         private IObservedInput observedInput = null;
+
+        /// <summary>
+        /// Temporarily stores which tab is currently displayed.
+        /// Meaningful only within the GUI
+        /// </summary>
+        [JsonIgnore]
+        public int ActiveTabIndex = 0;
 
         [JsonIgnore]
         private Report report = null;
@@ -69,9 +76,12 @@ namespace Models
         [EventSubscribe("SubscribeToEvents")]
         public void OnConnectToEvents(object sender, EventArgs args)
         {
-            report = new Report();
-            report.Name = this.Name;
-            report.Parent = this;
+            report = new Report
+            {
+                Name = Name,
+                Parent = this
+            };
+            
             this.Children.Add(report);
 
             var links = new Links(simulation.Services);
@@ -157,12 +167,12 @@ namespace Models
             return formattedColumnNames;
         }
 
-        private List<string> RemoveExtraArrayColumns(List<string> columnNames)
+        private static List<string> RemoveExtraArrayColumns(List<string> columnNames)
         {
             List<string> newColumnNames = new();
             foreach (string columnName in columnNames)
             {
-                if (columnName.Contains("(") && columnName.Contains(")"))
+                if (columnName.Contains('(') && columnName.Contains(')'))
                 {
                     string newName = columnName.Split("(")[0];
                     if (!newColumnNames.Contains(newName))
@@ -178,7 +188,7 @@ namespace Models
             return newColumnNames;
         }
 
-        private string BuildQueryForSimulationData(string observedInputName, int simulationID, string requiredColumn)
+        private static string BuildQueryForSimulationData(string observedInputName, int simulationID, string requiredColumn)
         {
             string query = string.Empty;
             query += "SELECT *\n";
@@ -237,6 +247,11 @@ namespace Models
             return newColumnNames;
         }
 
+        /// <summary>
+        /// Removes variables that do not exist in the APSIM file.
+        /// </summary>
+        /// <param name="columnNames"></param>
+        /// <returns></returns>
         private List<string> RemoveNonAPSIMVariables(List<string> columnNames)
         {
             List<string> newColumnNames = new List<string>();
@@ -251,19 +266,15 @@ namespace Models
         /// </summary>
         public string[] GetColumnNames()
         {
-            ObservedInput obs = (this.storage as Model).FindChild<ObservedInput>();
+            ObservedInput obs = storage.FindChild<ObservedInput>();
             if (obs != null)
             {
                 string[] columnNames = obs.ColumnNames;
                 if (columnNames == null)
-                    return new string[0];
-                else
-                    return columnNames;
+                    return Array.Empty<string>();
+                else return columnNames;
             }
-            else
-            {
-                return null;
-            }
+            else return null;
         }
     }
 }
