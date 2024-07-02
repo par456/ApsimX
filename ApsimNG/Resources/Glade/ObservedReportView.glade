@@ -11,45 +11,16 @@
     <property name="visible">True</property>
     <property name="can-focus">True</property>
     <child>
-      <object class="GtkScrolledWindow" id="propertiesScrolledWindow">
-        <property name="visible">True</property>
-        <property name="can-focus">True</property>
-        <property name="shadow-type">in</property>
-        <child>
-          <object class="GtkTreeView" id="propertiesTreeView">
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="enable-grid-lines">both</property>
-            <child internal-child="selection">
-              <object class="GtkTreeSelection"/>
-            </child>
-          </object>
-        </child>
-      </object>
+      <placeholder/>
     </child>
     <child type="tab">
-      <object class="GtkLabel" id="propertiesLabel">
-        <property name="visible">True</property>
-        <property name="can-focus">False</property>
-        <property name="label" translatable="yes">Properties</property>
-      </object>
-      <packing>
-        <property name="tab-fill">False</property>
-      </packing>
+      <placeholder/>
     </child>
     <child>
       <placeholder/>
     </child>
     <child type="tab">
-      <object class="GtkLabel" id="dataLabel">
-        <property name="visible">True</property>
-        <property name="can-focus">False</property>
-        <property name="label" translatable="yes">Data</property>
-      </object>
-      <packing>
-        <property name="position">1</property>
-        <property name="tab-fill">False</property>
-      </packing>
+      <placeholder/>
     </child>
   </object>
 </interface>

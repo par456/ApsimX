@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using GLib;
 using Gtk;
+using UserInterface.Classes;
+using UserInterface.EventArguments;
 using UserInterface.Interfaces;
 using Utility;
 
@@ -17,11 +20,9 @@ namespace UserInterface.Views
         private Notebook notebook1 = null;
         private Alignment alignment1 = null;
         private ViewBase dataStoreView1;
-        private ViewBase propertyView1;
+
         /// <summary>Provides access to the DataGrid.</summary>
         public ViewBase DataStoreView { get { return dataStoreView1; } }
-
-        public ViewBase PropertyView { get { return propertyView1; }}
 
         /// <summary>
         /// Indicates the index of the currently active tab
@@ -32,29 +33,19 @@ namespace UserInterface.Views
             set { notebook1.CurrentPage = value; }
         }
 
-        /// <summary>
-        /// Invoked when the selected tab is changed.
-        /// </summary>
+        /// <summary> Invoked when the selected tab is changed.</summary>
         public event EventHandler TabChanged;
-
+        
         /// <summary>Constructor</summary>
         public ObservedReportView(ViewBase owner) : base(owner)
         {
             Builder builder = BuilderFromResource("ApsimNG.Resources.Glade.ObservedReportView.glade");
 
             notebook1 = (Notebook)builder.GetObject("notebook1");
-            Label propertiesLabel = new Label("Properties");
-            Label dataLabel = new Label("Data");
-            notebook1.Add(propertiesLabel);
-            notebook1.Add(dataLabel);
-            // TODO: work out how to add things to specific tabs including labels.
-
-
-            propertyView1 = new ViewBase(this, "ApsimNG.Resources.Glade.PropertyPresenter.glade");
-            notebook1.Add(propertyView1.MainWidget);
 
             dataStoreView1 = new ViewBase(this, "ApsimNG.Resources.Glade.DataStoreView.glade");
             notebook1.Add(dataStoreView1.MainWidget);
+            notebook1.SetTabLabelText(dataStoreView1.MainWidget, "Data");
             notebook1.Add(alignment1);
 
             mainWidget = notebook1;

@@ -23,8 +23,6 @@ namespace UserInterface.Presenters
         /// <summary> The data store presenter object</summary>
         private DataStorePresenter dataStorePresenter;
 
-        private PropertyPresenter propertyPresenter;
-
         public void Attach(object model, object view, ExplorerPresenter explorerPresenter)
         {
             this.explorerPresenter = explorerPresenter;
@@ -38,7 +36,7 @@ namespace UserInterface.Presenters
             }
 
             dataStorePresenter = new DataStorePresenter(new string[] { observedReport.Name });
-            propertyPresenter = new PropertyPresenter();
+            
 
             Simulation simulation = observedReport.FindAncestor<Simulation>();
             Experiment experiment = observedReport.FindAncestor<Experiment>();

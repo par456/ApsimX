@@ -42,7 +42,8 @@ namespace Models
         [JsonIgnore]
         private Report report = null;
 
-        /// <summary> First field name used for match.</summary>
+
+        /// <summary> Field name used for match.</summary>
         private string fieldNameUsedForMatch;
 
         /// <summary>
