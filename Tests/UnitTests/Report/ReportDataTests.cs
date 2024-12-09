@@ -38,7 +38,7 @@
                     Utilities.CreateTable(new string[] { "Col1", "Col2", "Col3", "Col4" },
                                           new List<object[]> { new object[] { new DateTime(2017, 1, 1),    1.0,      1,  "abc"},
                                                                new object[] { new DateTime(2017, 1, 2),    2.0,      2,  "def"} })
-                   .IsSame(data.ToTable()));
+                   .IsSame(data.ToTable()), Is.True);
         }
 
         /// <summary>Convert whole arrays to a table with correct headings.</summary>
@@ -61,7 +61,7 @@
                     Utilities.CreateTable(new string[] { "Col(1)", "Col(2)", "Zones(1).WaterUptake(1)", "Zones(1).WaterUptake(2)", "Col(3)" },
                                           new List<object[]> { new object[] {        1,      2.0,                         3,                         4, Convert.DBNull},
                                                                new object[] {        5,      6.0,                         8,                         9,              7}})
-                   .IsSame(data.ToTable()));
+                   .IsSame(data.ToTable()), Is.True);
         }
 
         /// <summary>Convert arrays that are initially null but later have values.</summary>
@@ -85,7 +85,7 @@
                     Utilities.CreateTable(new string[] { "Col(1)", "Col(2)", "Col(3)" },
                                           new List<object[]> { new object[] { Convert.DBNull, Convert.DBNull, Convert.DBNull },
                                                                new object[] {              1,              2,              3 }})
-                   .IsSame(data.ToTable()));
+                   .IsSame(data.ToTable()), Is.True);
         }
 
         /// <summary>Convert an array of structures to a table.</summary>
@@ -129,7 +129,7 @@
                     Utilities.CreateTable(new string[] { "Col1.a", "Col1.b(1).c", "Col1.b(2).c" },
                                           new List<object[]> { new object[] {          1,             2,            3 },
                                                                new object[] {          4,             5,            6 }})
-                   .IsSame(data.ToTable()));
+                   .IsSame(data.ToTable()), Is.True);
         }
     }
 }
