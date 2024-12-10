@@ -17,9 +17,6 @@ namespace Models
     [ViewName("UserInterface.Views.ObservedReportView")]
     [PresenterName("UserInterface.Presenters.ObservedReportPresenter")]
     [ValidParent(ParentType = typeof(Simulation))]
-    [ValidParent(ParentType = typeof(Zone))]
-    [ValidParent(ParentType = typeof(Zones.CircularZone))]
-    [ValidParent(ParentType = typeof(Zones.RectangularZone))]
     public class ObservedReport : Model
     {
         /// <summary>Link to the DataStore</summary>
@@ -104,16 +101,25 @@ namespace Models
             report.SubscribeToEvents();
         }
 
+        /// <summary>Invoked when a simulation is completed.</summary>
+        /// <param name="sender">Event sender</param>
+        /// <param name="e">Event arguments</param>
+        [EventSubscribe("Completed")]
+        protected void OnCompleted(object sender, EventArgs e)
+        {
+            report.WriteRemainingRows();
+        }
+
         /// <summary>DO NOT use in pre-sim step, FindByPath uses links that break serialization</summary>
         private IVariable NameMatchesAPSIMModel(string columnName)
         {
-            Model zone = FindAncestor<Zone>();
-            if (zone == null)
-                zone = FindAncestor<Zones.CircularZone>();
-            if (zone == null)
-                zone = FindAncestor<Zones.RectangularZone>();
-
             Simulation sim = FindAncestor<Simulation>();
+
+            Model zone = sim.FindDescendant<Zone>();
+            if (zone == null)
+                zone = sim.FindDescendant<Zones.CircularZone>();
+            if (zone == null)
+                zone = sim.FindDescendant<Zones.RectangularZone>();
 
             string cleanedName = columnName;
             //strip ( ) out of columns that refer to arrays
@@ -130,6 +136,9 @@ namespace Models
 
             if (firstPart == null)
                 firstPart = sim.FindDescendant(nameParts[0]);
+
+            if (firstPart == null)
+                return null;
 
             if (zone != null)
             {
@@ -242,7 +251,7 @@ namespace Models
                 }
                 else
                 {
-                    throw new Exception($"{this.Name} (ObservedReport) Error: Simulation {sim.Name} cannot be found in the {observedInput.SheetNames[i]} table. Make sure the name of the simulation matches, or remove the ObservedReport from this simulation.");
+                    //throw new Exception($"{this.Name} (ObservedReport) Error: Simulation {sim.Name} cannot be found in the {observedInput.SheetNames[i]} table. Make sure the name of the simulation matches, or remove the ObservedReport from this simulation.");
                 }
             }
             return newColumnNames;

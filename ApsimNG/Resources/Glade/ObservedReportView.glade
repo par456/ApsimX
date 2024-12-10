@@ -7,20 +7,4 @@
     <property name="step-increment">1</property>
     <property name="page-increment">10</property>
   </object>
-  <object class="GtkNotebook" id="notebook1">
-    <property name="visible">True</property>
-    <property name="can-focus">True</property>
-    <child>
-      <placeholder/>
-    </child>
-    <child type="tab">
-      <placeholder/>
-    </child>
-    <child>
-      <placeholder/>
-    </child>
-    <child type="tab">
-      <placeholder/>
-    </child>
-  </object>
 </interface>

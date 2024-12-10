@@ -223,10 +223,7 @@ namespace Models.PreSimulationTools
                 for (int j = 0; j < dt.Columns.Count; j++)
                 {
                     string columnName = columnsNames[j];
-                    if (NameIsAPSIMFormat(columnName))
-                    {
-                        columnNames.Add(columnName);
-                    }
+                    columnNames.Add(columnName);
                 }
             }
 

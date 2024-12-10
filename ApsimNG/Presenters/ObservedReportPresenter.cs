@@ -1,10 +1,8 @@
 
-using System;
 using Models;
 using Models.Core;
 using Models.Factorial;
 using Models.Storage;
-using UserInterface.Presenters;
 using UserInterface.Views;
 
 namespace UserInterface.Presenters
@@ -20,6 +18,9 @@ namespace UserInterface.Presenters
         /// <summary> The data storage</summary>
         private IDataStore dataStore;
 
+        /// <summary> The property presenter object</summary>
+        private PropertyPresenter propertyPresenter;
+
         /// <summary> The data store presenter object</summary>
         private DataStorePresenter dataStorePresenter;
 
@@ -29,6 +30,9 @@ namespace UserInterface.Presenters
             observedReport = model as ObservedReport;
             observedReportView = view as ObservedReportView;
 
+            propertyPresenter = new PropertyPresenter();
+            propertyPresenter.Attach(observedReport, observedReportView.PropertyView, explorerPresenter);
+
             Simulations simulations = observedReport.FindAncestor<Simulations>();
             if (simulations != null)
             {
@@ -36,7 +40,6 @@ namespace UserInterface.Presenters
             }
 
             dataStorePresenter = new DataStorePresenter(new string[] { observedReport.Name });
-            
 
             Simulation simulation = observedReport.FindAncestor<Simulation>();
             Experiment experiment = observedReport.FindAncestor<Experiment>();
@@ -52,12 +55,12 @@ namespace UserInterface.Presenters
                 dataStorePresenter.SimulationFilter = simulation;
 
             dataStorePresenter.Attach(dataStore, this.observedReportView.DataStoreView, explorerPresenter);
-            this.observedReportView.TabIndex = this.observedReport.ActiveTabIndex;
+            //this.observedReportView.TabIndex = this.observedReport.ActiveTabIndex;
         }
 
         public void Detach()
         {
-            observedReport.ActiveTabIndex = observedReportView.TabIndex;
+            //observedReport.ActiveTabIndex = observedReportView.TabIndex;
             dataStorePresenter?.Detach();
         }
 

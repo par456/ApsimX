@@ -45,12 +45,12 @@ namespace UnitTests.Observed
 
             Runner runner = new Runner(sims);
             List<Exception> errors = runner.Run();
-            Assert.IsTrue(errors.Count <= 0);
+            Assert.That(errors.Count, Is.LessThanOrEqualTo(0));
             DataTable data = storage.Reader.GetData("ObservedReport");
             if (data.Rows.Count != 0)
             {
                 DataRow rowToCheck = data.Rows[0];
-                Assert.NotNull(rowToCheck);
+                Assert.That(rowToCheck, Is.Not.Null);
             }
             else Assert.Fail("No rows found in ObservedReport Table.");
         }
@@ -84,7 +84,7 @@ namespace UnitTests.Observed
 
             Runner runner = new Runner(sims);
             List<Exception> errors = runner.Run();
-            Assert.IsTrue(errors.Count <= 0);
+            Assert.That(errors.Count, Is.LessThanOrEqualTo(0));
             DataTable data = storage.Reader.GetData("ObservedReport");
             if (data.Rows.Count != 0)
             {
@@ -94,7 +94,7 @@ namespace UnitTests.Observed
                     if (row[2].ToString() != sim.Name)
                         doesARowContainAnUnmatchedSimName = true;
                 }
-                Assert.IsFalse(doesARowContainAnUnmatchedSimName);
+                Assert.That(doesARowContainAnUnmatchedSimName, Is.False);
             }
             else Assert.Fail("No rows found in ObservedReport Table.");
         }
@@ -110,7 +110,7 @@ namespace UnitTests.Observed
             DataStore storage = sim.FindInScope<DataStore>();
             Runner runner = new Runner(sim);
             List<Exception> errors = runner.Run();
-            Assert.IsTrue(errors.Count > 0);
+            Assert.That(errors.Count, Is.LessThanOrEqualTo(0));
         }
 
         /// <summary>

@@ -198,6 +198,12 @@ namespace Models
         [EventSubscribe("Completed")]
         protected void OnCompleted(object sender, EventArgs e)
         {
+            WriteRemainingRows();
+        }
+
+        /// <summary>If there are an rows still to be written in the buffer, this will write them to the datastore.</summary>
+        public void WriteRemainingRows()
+        {
             if (dataToWriteToDb != null)
                 storage.Writer.WriteTable(dataToWriteToDb);
             dataToWriteToDb = null;
