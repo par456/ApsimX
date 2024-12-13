@@ -22,6 +22,23 @@ namespace Models.PreSimulationTools
     [ValidParent(ParentType = typeof(DataStore))]
     public class ObservedInput : Model, IPreSimulationTool, IReferenceExternalFiles, IObservedInput
     {
+        /// <summary>
+        /// Stores information about a column in an observed table
+        /// </summary>
+        public class ColumnInfo 
+        {
+            /// <summary></summary>
+            public string Name;
+            /// <summary></summary>
+            public string Units;
+            /// <summary></summary>
+            public bool IsApsimVariable;
+            /// <summary></summary>
+            public Type DataType;
+            /// <summary></summary>
+            public List<string> Warnings;
+        }
+
         private string[] filenames;
 
         /// <summary>
@@ -114,9 +131,7 @@ namespace Models.PreSimulationTools
         /// </summary>
         public void Run()
         {
-            if (storage == null)
-                storage = this.FindAncestor<DataStore>();
-
+            //Clear the tables at the start, since we need to read into them again
             foreach (string sheet in SheetNames)
                 if (storage.Reader.TableNames.Contains(sheet))
                     storage.Writer.DeleteTable(sheet);
@@ -127,76 +142,150 @@ namespace Models.PreSimulationTools
                 if (!File.Exists(absoluteFileName))
                     throw new Exception($"Error in {Name}: file '{absoluteFileName}' does not exist");
 
-                if (Path.GetExtension(absoluteFileName).Equals(".xls", StringComparison.CurrentCultureIgnoreCase))
-                    throw new Exception($"EXCEL file '{absoluteFileName}' must be in .xlsx format.");
-
-                // Open the file
-                using (FileStream stream = File.Open(absoluteFileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+                List<DataTable> tables = LoadFromExcel(absoluteFileName);
+                foreach (DataTable table in tables)
                 {
-                    // Reading from a OpenXml Excel file (2007 format; *.xlsx)
-                    using (IExcelDataReader excelReader = ExcelReaderFactory.CreateOpenXmlReader(stream))
-                    {
-                        // Read all sheets from the EXCEL file as a data set.
-                        DataSet dataSet = excelReader.AsDataSet(new ExcelDataSetConfiguration()
-                        {
-                            UseColumnDataType = true,
-                            ConfigureDataTable = (_) => new ExcelDataTableConfiguration()
-                            {
-                                UseHeaderRow = true
-                            }
-                        });
+                    DataTable validatedTable = ValidateColumns(table);
 
-                        // Write all sheets that are specified in 'SheetNames' to the data store
-                        foreach (DataTable table in dataSet.Tables)
-                        {
-                            if (SheetNames.Any(str => string.Equals(str.Trim(), table.TableName, StringComparison.InvariantCultureIgnoreCase)))
-                            {
-                                TruncateDates(table);
-
-                                // Don't delete previous data existing in this table. Doing so would
-                                // cause problems when merging sheets from multiple excel files.
-                                storage.Writer.WriteTable(table, false);
-                                storage.Writer.WaitForIdle();
-                            }
-                        }
-                    }
+                    // Don't delete previous data existing in this table. Doing so would
+                    // cause problems when merging sheets from multiple excel files.
+                    storage.Writer.WriteTable(table, false);
+                    storage.Writer.WaitForIdle();
                 }
             }
 
             GetAPSIMColumnsFromObserved();
         }
+        
+        /// <summary>
+        /// </summary>
+        public List<DataTable> LoadFromExcel(string filepath)
+        {
+            if (Path.GetExtension(filepath).Equals(".xls", StringComparison.CurrentCultureIgnoreCase))
+                throw new Exception($"EXCEL file '{filepath}' must be in .xlsx format.");
+
+            List<DataTable> tables = new List<DataTable>();
+
+            // Open the file
+            using (FileStream stream = File.Open(filepath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                // Reading from a OpenXml Excel file (2007 format; *.xlsx)
+                using (IExcelDataReader excelReader = ExcelReaderFactory.CreateOpenXmlReader(stream))
+                {
+                    // Read all sheets from the EXCEL file as a data set.
+                    DataSet dataSet = excelReader.AsDataSet(new ExcelDataSetConfiguration()
+                    {
+                        UseColumnDataType = true,
+                        ConfigureDataTable = (_) => new ExcelDataTableConfiguration()
+                        {
+                            UseHeaderRow = true
+                        }
+                    });
+
+                    // Write all sheets that are specified in 'SheetNames' to the data store
+                    foreach (DataTable table in dataSet.Tables)
+                        if (SheetNames.Any(str => string.Equals(str.Trim(), table.TableName, StringComparison.InvariantCultureIgnoreCase)))
+                            tables.Add(table);
+                }
+            }
+            return tables;
+        }
 
         /// <summary>
-        /// If the data table contains DateTime fields, convert them to hold
-        /// only the "Date" portion, and not the "Time" within the day.
-        /// We do this because in estatablishing PredictedObserved connections,
-        /// we commonly use the DateTime fields, but are (currently) only 
-        /// interested in the Date.
-        /// WARNING: This could potentially cause issues in the future, especially
-        /// if we begin to make use of sub-day model steps.
         /// </summary>
-        /// <param name="table">Table to be adjusted</param>
-        public static void TruncateDates(DataTable table)
+        public DataTable ValidateColumns(DataTable table)
         {
-            for (int icol = 0; icol < table.Columns.Count; icol++)
-                if (table.Columns[icol].DataType == typeof(DateTime))
+            Simulations sims = this.FindAncestor<Simulations>();
+            List<ColumnInfo> infos = new List<ColumnInfo>();
+
+            List<(string, Type)> replaceColumns = new List<(string, Type)>();
+
+            //determine what type each column is
+            foreach (DataColumn column in table.Columns) 
+            {
+                ColumnInfo info = new ColumnInfo();
+                info.Name = column.ColumnName;
+
+                info.DataType = null;
+                bool stop = false;
+                for(int i = 0; i < table.Rows.Count && !stop; i++)
                 {
-                    foreach (DataRow row in table.Rows)
-                        if (!DBNull.Value.Equals(row[icol]))
-                            row[icol] = Convert.ToDateTime(row[icol], CultureInfo.InvariantCulture).Date;
+                    DataRow row = table.Rows[i];
+                    Type cellType = InputUtilities.GetTypeOfCell(row[column]);
+
+                    //if a cell is a string, then stop because string is the most generic type
+                    if (cellType == typeof(string))
+                    {
+                        info.DataType = cellType;
+                        stop = true;
+                    }
+                    //If it's a double, set this to double, since if it was a string, it would have stopped
+                    if (cellType == typeof(double))
+                        info.DataType = cellType;
+
+                    //If it's a int, set type to int only if the type is not a double
+                    if (cellType == typeof(int) && info.DataType != typeof(double))
+                        info.DataType = cellType;
+
+                    //If it's a datetime, set type to datetime only if the type is not a double or int
+                    if (cellType == typeof(DateTime) && info.DataType != typeof(double) && info.DataType != typeof(int))
+                        info.DataType = cellType;
                 }
+
+                IVariable variable = InputUtilities.NameMatchesAPSIMModel(sims, column.ColumnName);
+                if (variable != null)
+                {
+                    info.IsApsimVariable = true;
+                    info.Units = variable.UnitsLabel;
+                }
+                else
+                {
+                    info.IsApsimVariable = false;
+                    info.Units = "";
+                }
+
+                info.Warnings = new List<string>();
+                infos.Add(info);
+
+                //Check if column is formatted for the wrong type of data
+                if (info.DataType != null && column.DataType != info.DataType) {
+                    replaceColumns.Add((column.ColumnName, info.DataType));
+                }
+            }
+
+            foreach ((string, Type) replace in replaceColumns) 
+            {
+                string name = replace.Item1;
+                Type type = replace.Item2;
+
+                DataColumn column = table.Columns[name];
+                int ordinal = column.Ordinal;
+
+                DataColumn newColumn = new DataColumn("NewColumn"+name, type);
+                table.Columns.Add(newColumn);
+                newColumn.SetOrdinal(ordinal);
+
+                foreach (DataRow row in table.Rows)
+                {
+                    string content = row[name].ToString();
+                    if (string.IsNullOrEmpty(content))
+                        row[newColumn.ColumnName] = DBNull.Value;
+                    else if (type == typeof(DateTime)) 
+                        row[newColumn.ColumnName] = DateUtilities.GetDate(content);
+                    else if (type == typeof(int))
+                        row[newColumn.ColumnName] = int.Parse(content);
+                    else if (type == typeof(double)) 
+                        row[newColumn.ColumnName] = double.Parse(content);
+                    else
+                        row[newColumn.ColumnName] = content;
+                }
+
+                table.Columns.Remove(name);
+                newColumn.ColumnName = name;
+            }
+
+            return table;
         }
-
-
-        /// <summary></summary>
-        private bool NameIsAPSIMFormat(string columnName)
-        {
-            if (columnName.Contains('.'))
-                return true;
-            else
-                return false;
-        }
-
 
         /// <summary>From the list of columns read in, get a list of columns that match apsim variables.</summary>
         public void GetAPSIMColumnsFromObserved()
