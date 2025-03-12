@@ -113,6 +113,10 @@ namespace Models
         /// <summary>DO NOT use in pre-sim step, FindByPath uses links that break serialization</summary>
         private IVariable NameMatchesAPSIMModel(string columnName)
         {
+            //if the column has no . in the name, it is not a model
+            if (columnName.IndexOf('.') < 0)
+                return null;
+
             Simulation sim = FindAncestor<Simulation>();
 
             Model zone = sim.FindDescendant<Zone>();
