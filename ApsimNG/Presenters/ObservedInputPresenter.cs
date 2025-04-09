@@ -1,6 +1,6 @@
 ﻿using Gtk.Sheet;
 using Models.Core;
-using Models.Interfaces;
+using System.Data;
 using UserInterface.Views;
 
 namespace UserInterface.Presenters
@@ -13,7 +13,8 @@ namespace UserInterface.Presenters
         private ObservedInputView view;
         private ExplorerPresenter explorerPresenter;
         private IPresenter propertyPresenter;
-        private GridPresenter gridPresenter;
+        private GridPresenter columnsGridPresenter;
+        private GridPresenter derivedGridPresenter;
 
         /// <summary>
         /// Attach the model to the view.
@@ -30,15 +31,19 @@ namespace UserInterface.Presenters
             explorerPresenter.ApsimXFile.Links.Resolve(propertyPresenter);
             propertyPresenter.Attach(model, view.PropertyView, parentPresenter);
             
-            gridPresenter = new GridPresenter();
-            gridPresenter.Attach(model, view.GridViewColumns, parentPresenter);
+            columnsGridPresenter = new GridPresenter();
+            columnsGridPresenter.Attach(new DataTableProvider(new DataTable()), view.GridViewColumns, parentPresenter);
+            columnsGridPresenter.AddContextMenuOptions(new string[] { "Cut", "Copy", "Paste", "Delete", "Select All" });
 
-            IDataProvider dp = DataProviderFactory.CreateUsingDataTableName(model, "ColumnData", (properties) => {});
-            gridPresenter.SetupSheet(dp);
+            IDataProvider columnProvider = DataProviderFactory.CreateUsingDataTableName(model, "ColumnData", (properties) => {});
+            columnsGridPresenter.PopulateWithDataProvider(columnProvider);
 
-            gridPresenter.AddContextMenuOptions(new string[] { "Cut", "Copy", "Paste", "Delete", "Select All" });
-            gridPresenter.AddIntellisense(model as Model);
-            gridPresenter.CellChanged += OnCellChanged;
+            derivedGridPresenter = new GridPresenter();
+            derivedGridPresenter.Attach(new DataTableProvider(new DataTable()), view.GridViewAdded, parentPresenter);
+            derivedGridPresenter.AddContextMenuOptions(new string[] { "Cut", "Copy", "Paste", "Delete", "Select All" });
+
+            IDataProvider derivedProvider = DataProviderFactory.CreateUsingDataTableName(model, "CalculatedVariables", (properties) => {});
+            derivedGridPresenter.PopulateWithDataProvider(derivedProvider);
             
         }
 
@@ -47,17 +52,9 @@ namespace UserInterface.Presenters
         /// </summary>
         public void Detach()
         {
-            //gridPresenter.CellChanged -= OnCellChanged;
-            //propertyPresenter.Detach();
-            //gridPresenter.Detach();
-        }
-
-        /// <param name="dataProvider">The provider that contains the data.</param>
-        /// <param name="colIndices">The indices of the columns of the cells that were changed.</param>
-        /// <param name="rowIndices">The indices of the rows of the cells that were changed.</param>
-        /// <param name="values">The cell values.</param>
-        private void OnCellChanged(IDataProvider dataProvider, int[] colIndices, int[] rowIndices, string[] values)
-        {
+            propertyPresenter.Detach();
+            columnsGridPresenter.Detach();
+            derivedGridPresenter.Detach();
         }
     }
 }

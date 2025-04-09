@@ -45,6 +45,9 @@ namespace UserInterface.Views
             GridViewColumns = new ContainerView(owner);
             notebook.AppendPage(GridViewColumns.MainWidget, new Label("Columns"));
 
+            GridViewAdded = new ContainerView(owner);
+            notebook.AppendPage(GridViewAdded.MainWidget, new Label("Derived"));
+
             GridViewDataTypeError = new ContainerView(owner);
             notebook.AppendPage(GridViewDataTypeError.MainWidget, new Label("Data Type Error"));
 

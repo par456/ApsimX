@@ -3,12 +3,11 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
-using System.Text.Json.Serialization;
-using APSIM.Shared.Interfaces;
 using APSIM.Shared.Utilities;
 using ExcelDataReader;
 using Models.Core;
 using Models.Core.Run;
+using Models.PMF;
 using Models.Storage;
 
 namespace Models.PreSimulationTools
@@ -93,15 +92,9 @@ namespace Models.PreSimulationTools
             public string SimulationName;
             /// <summary></summary>
             public string ClockToday;
-            /// <summary></summary>
-            public ValidationRule Rule;
-            /// <summary></summary>
-            public string Message;
-            /// <summary></summary>
-            public bool ThrowException;
 
             /// <summary>Contructor</summary>
-            public ValidationRecord(string filename, string tableName, string inputName, string columnName, string simulationName, string clockToday, ValidationRule rule, string message, bool throwException)
+            public ValidationRecord(string filename, string tableName, string inputName, string columnName, string simulationName, string clockToday)
             {
                 Filename = filename;
                 TableName = tableName;
@@ -109,9 +102,6 @@ namespace Models.PreSimulationTools
                 ColumnName = columnName;
                 SimulationName = simulationName;
                 ClockToday = clockToday;
-                Rule = rule;
-                Message = message;
-                ThrowException = throwException;
             }
         }
 
@@ -131,6 +121,33 @@ namespace Models.PreSimulationTools
 
             /// <summary></summary>
             public string DataType;
+
+            /// <summary></summary>
+            public bool HasErrorColumn;
+
+            /// <summary></summary>
+            public string Filename;
+        }
+
+        /// <summary>
+        /// Stores information about a column in an observed table
+        /// </summary>
+        public class DerivedInfo 
+        {
+            /// <summary></summary>
+            public string Name;
+            
+            /// <summary></summary>
+            public string Function;
+
+            /// <summary></summary>
+            public string DataType;
+
+            /// <summary></summary>
+            public int Added;
+
+            /// <summary></summary>
+            public int Existing;
         }
 
         private string[] filenames;
@@ -253,6 +270,7 @@ namespace Models.PreSimulationTools
             }
 
             GetAPSIMColumnsFromObserved();
+            GetDerivedColumnsFromObserved();
 
             RunValidation();
         }
@@ -388,6 +406,99 @@ namespace Models.PreSimulationTools
         }
 
         /// <summary>From the list of columns read in, get a list of columns that match apsim variables.</summary>
+        public void GetDerivedColumnsFromObserved()
+        {
+            Simulations sims = this.FindAncestor<Simulations>();
+
+            storage?.Writer.Stop();
+            storage?.Reader.Refresh();
+
+            List<string> tableNames = SheetNames.ToList();
+
+            List<string> columnNames = new List<string>();
+            List<DerivedInfo> columns = new List<DerivedInfo>();
+
+            for (int i = 0; i < tableNames.Count; i++)
+            {
+                string tableName = tableNames[i];
+                DataTable dt = storage.Reader.GetData(tableName);
+                List<string> allColumnNames = dt.GetColumnNames().ToList();
+
+                for (int j = 0; j < dt.Columns.Count; j++)
+                {
+                    string columnName = dt.Columns[j].ColumnName;
+                    //NConc
+                    if (columnName.EndsWith(".Wt"))
+                    {
+                        string organ = columnName.Substring(0, columnName.IndexOf(".Wt"));
+                        if (allColumnNames.Contains(organ + ".N"))
+                        {
+                            string nConc = organ + ".NConc";
+                            string wt = organ + ".Wt";
+                            string n = organ + ".N";
+
+                            if (!dt.Columns.Contains(nConc))
+                                dt.Columns.Add(nConc);
+                            int added = 0;
+                            int existing = 0;
+                            for (int k = 0; k < dt.Rows.Count; k++)
+                            {
+                                DataRow row = dt.Rows[k];
+                                if (!string.IsNullOrEmpty(row[nConc].ToString()))
+                                {
+                                    existing += 1;
+                                } 
+                                else if (!string.IsNullOrEmpty(row[wt].ToString()) && !string.IsNullOrEmpty(row[n].ToString()))
+                                {
+                                    double nValue = Convert.ToDouble(row[n]);
+                                    double wtValue = Convert.ToDouble(row[wt]);
+                                    row[nConc] = nValue / wtValue;
+                                    added += 1;
+                                }
+                            }
+
+                            DerivedInfo info = new DerivedInfo();
+                            info.Name = organ + ".NConc";
+                            info.Function = organ + ".N / " + organ + ".Wt";
+                            info.DataType = "Double";
+                            info.Added = added;
+                            info.Existing = existing;
+                            columns.Add(info);
+                        }
+                    }
+                }
+            }
+
+            DataTable newTable = new DataTable();
+            newTable.Columns.Add("Name");
+            newTable.Columns.Add("Function");
+            newTable.Columns.Add("DataType");
+            newTable.Columns.Add("Added");
+            newTable.Columns.Add("Existing");
+
+            foreach (DerivedInfo info in columns) 
+            {
+                
+                DataRow row = newTable.NewRow();
+                row["Name"] = info.Name;
+                row["Function"] = info.Function;
+                row["DataType"] = info.DataType;
+                row["Added"] = info.Added;
+                row["Existing"] = info.Existing;
+
+                newTable.Rows.Add(row);
+            }
+
+            for(int i = 0; i < newTable.Columns.Count; i++)
+                newTable.Columns[i].ReadOnly = true;
+
+            DataView dv = newTable.DefaultView;
+            dv.Sort = "Name asc";
+
+            this.CalculatedVariables = dv.ToTable();
+        }
+
+        /// <summary>From the list of columns read in, get a list of columns that match apsim variables.</summary>
         public void GetAPSIMColumnsFromObserved()
         {
             Simulations sims = this.FindAncestor<Simulations>();
@@ -404,17 +515,15 @@ namespace Models.PreSimulationTools
             {
                 string tableName = tableNames[i];
                 DataTable dt = storage.Reader.GetData(tableName);
+                List<string> allColumnNames = dt.GetColumnNames().ToList();
 
                 for (int j = 0; j < dt.Columns.Count; j++)
                 {
                     string columnName = dt.Columns[j].ColumnName;
+                    string columnNameOriginal = columnName;
                     //remove Error from name
                     if (columnName.EndsWith("Error"))
                         columnName = columnName.Remove(columnName.IndexOf("Error"), 5);
-
-                    //remove standard error
-                    if (columnName.EndsWith(".se"))
-                        columnName = columnName.Remove(columnName.IndexOf(".se"), 3);
 
                     //check if it has maths
                     bool hasMaths = false;
@@ -431,7 +540,7 @@ namespace Models.PreSimulationTools
 
                     //filter out reserved names
                     bool reservedName = false;
-                    if (columnName == "CheckpointName" || columnName == "CheckpointID" || columnName == "SimulationName" || columnName == "SimulationID")
+                    if (columnName == "CheckpointName" || columnName == "CheckpointID" || columnName == "SimulationName" || columnName == "SimulationID" || columnName == "_Filename")
                         reservedName = true;
 
                     if(!columnNames.Contains(columnName) && !reservedName)
@@ -448,7 +557,20 @@ namespace Models.PreSimulationTools
                                 nameIsAPSIMModel = true;
                             }
                         }
+
+                        //Get a filename for this property
+                        string filename = "";
+                        for (int k = 0; k < dt.Rows.Count && string.IsNullOrEmpty(filename); k++)
+                        {
+                            DataRow row = dt.Rows[k];
+                            if (!string.IsNullOrEmpty(row[columnNameOriginal].ToString()))
+                            {
+                                filename = row["_Filename"].ToString();
+                            }
+                        }
+
                         ColumnInfo colInfo = new ColumnInfo();
+                        colInfo.Filename = filename;
                         colInfo.Name = columnName;
 
                         colInfo.IsApsimVariable = "No";
@@ -462,6 +584,11 @@ namespace Models.PreSimulationTools
                             colInfo.IsApsimVariable = "Yes";
                             colInfo.DataType = variable.DataType.Name;
                         }
+
+                        colInfo.HasErrorColumn = false;
+                        if (allColumnNames.Contains(columnName + "Error"))
+                            colInfo.HasErrorColumn = true;
+                            
                         columns.Add(colInfo);
                     }
                 }
@@ -473,6 +600,8 @@ namespace Models.PreSimulationTools
             newTable.Columns.Add("Name");
             newTable.Columns.Add("APSIM");
             newTable.Columns.Add("Type");
+            newTable.Columns.Add("Error Bars");
+            newTable.Columns.Add("File");
 
             foreach (ColumnInfo columnInfo in columns) 
             {
@@ -481,12 +610,17 @@ namespace Models.PreSimulationTools
                 row["Name"] = columnInfo.Name;
                 row["APSIM"] = columnInfo.IsApsimVariable;
                 row["Type"] = columnInfo.DataType;
+                row["Error Bars"] = columnInfo.HasErrorColumn;
+                row["File"] = columnInfo.Filename;
 
                 newTable.Rows.Add(row);
             }
 
+            for(int i = 0; i < newTable.Columns.Count; i++)
+                newTable.Columns[i].ReadOnly = true;
+
             DataView dv = newTable.DefaultView;
-            dv.Sort = "APSIM desc";
+            dv.Sort = "APSIM desc, Name asc";
 
             this.ColumnData = dv.ToTable();
         }
@@ -676,7 +810,7 @@ namespace Models.PreSimulationTools
             else if (rule == ValidationRule.ColumnAPSIMTypeDoubleToInt)
                 message = $"{columnName} is an integer APSIM variable, but has data is a decimal at row {row}. {value}.";
 
-            return new ValidationRecord(filename, tableName, inputName, columnName, simulationName, clockToday, rule, message, throwException);
+            return new ValidationRecord(filename, tableName, inputName, columnName, simulationName, clockToday);
         }
         /*
         private List<ValidationResult> ValidateLiveDeadEqualsTotal(List<string> tableNames, List<string> inputNames, Simulations sims)

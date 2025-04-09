@@ -44,7 +44,7 @@ public class DataProviderFactory
     }
 
     /// <summary>
-    /// Convert a model to an ISheetDataProvider so that it can be represented in a grid control.
+    /// Convert a DataTable property within a model to an ISheetDataProvider so that it can be represented in a grid control.
     /// </summary>
     /// <param name="obj">The class instance.</param>
     /// <param name="callback">A callback allowing the caller to manipulate the list of properties</param>
