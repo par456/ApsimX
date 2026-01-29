@@ -1,8 +1,8 @@
 {
   "$type": "Models.Core.Simulations, Models",
-  "ExplorerWidth": 0,
-  "Version": 192,
+  "Version": 208,
   "Name": "Simulations",
+  "ResourceName": null,
   "Children": [
     {
       "$type": "Models.PMF.Plant, Models",
@@ -32,7 +32,6 @@
                 {
                   "$type": "Models.Core.Folder, Models",
                   "ShowInDocs": true,
-                  "GraphsPerPage": 6,
                   "Name": "PotentialPartitioningMethods",
                   "ResourceName": null,
                   "Children": [
@@ -75,7 +74,6 @@
                 {
                   "$type": "Models.Core.Folder, Models",
                   "ShowInDocs": true,
-                  "GraphsPerPage": 6,
                   "Name": "AllocationMethods",
                   "ResourceName": null,
                   "Children": [
@@ -119,7 +117,6 @@
                 {
                   "$type": "Models.Core.Folder, Models",
                   "ShowInDocs": true,
-                  "GraphsPerPage": 6,
                   "Name": "PotentialPartitioningMethods",
                   "ResourceName": null,
                   "Children": [
@@ -138,7 +135,6 @@
                 {
                   "$type": "Models.Core.Folder, Models",
                   "ShowInDocs": true,
-                  "GraphsPerPage": 6,
                   "Name": "ActualPartitioningMethods",
                   "ResourceName": null,
                   "Children": [
@@ -165,7 +161,6 @@
                 {
                   "$type": "Models.Core.Folder, Models",
                   "ShowInDocs": true,
-                  "GraphsPerPage": 6,
                   "Name": "AllocationMethods",
                   "ResourceName": null,
                   "Children": [
@@ -237,7 +232,7 @@
             },
             {
               "$type": "Models.Memo, Models",
-              "Text": "Wheat exhibits a range of developmental responses to environment and these are strongly influenced by genotype characteristics. \nTemperature is the primary driver of development, increasing development rates and decreasing phase durations as it increases.  These affects are captured by thermal time.  However, wheat also exhibits cold and photoperiod sensitivities in its Vernalisaing phase and further photoperiod sensitivity in the SpikeletDifferenation and HeadEmergence phases.  Photoperiod responses are seen as a reduction in the length of a phase for a photoperiod sensitive genotype in response to a longer photoperiod.  Vernalisation responses are more complicated as they are driven by cool temperature but interact with photoperiod.  For vernalisation sensitive varieties (Winter types), exposure to cool temperatures and/or short photoperiods during the Vernalising phase may reduce its thermal time duration.  \n\nAPSIM wheat implements the Cereal Anthesis Molecular Phenology (CAMP) model to simulate development.  It is based on the Kirby Framework which assumes the timing of anthesis is a result of the timing of flag leaf and an additional thermal time passage from there to heading then anthesis.  It also assumes the timing of flag leaf is a result of the Final Leaf Number (which sets a target) and leaf appearance rate (which sets the rate of progress toward the target).  Leaf appearance rate is a function of Thermal time and a genotype specific Phyllochron which changes with Haun stage as described by [Jamieson_LeafAppearance_1995].  \n\nFinal Leaf Number (FLN) is set on the day that terminal spikelet occurs as: \n\nFLN = 2.85 + 1.1 * TSHS  \n\nWhere TSHS is the Haun stage on the day terminal spikelet stage occurs.  Terminal spikelet is at the end of the SpikeletDifferentaiation phase which is preceeded by the Emerging and Vernalising phases.  The mechanisums for progress through each of these phase are described below",
+              "Text": "Wheat exhibits a range of developmental responses to environment and these are strongly influenced by genotype characteristics. \nTemperature is the primary driver of development, increasing development rates and decreasing phase durations as it increases.  These affects are captured by thermal time.  However, wheat also exhibits cold and photoperiod sensitivities in its Vernalisaing phase and further photoperiod sensitivity in the SpikeletDifferenation and HeadEmergence phases.  Photoperiod responses are seen as a reduction in the length of a phase for a photoperiod sensitive genotype in response to a longer photoperiod.  Vernalisation responses are more complicated as they are driven by cool temperature but interact with photoperiod.  For vernalisation sensitive varieties (Winter types), exposure to cool temperatures and/or short photoperiods during the Vernalising phase may reduce its thermal time duration.  \n\nAPSIM wheat implements the Cereal Anthesis Molecular Phenology (<a href=\"https://www.apsim.info/wp-content/uploads/2025/09/camp-model-description-1.pdf\">CAMP</a>) model to simulate development.  It is based on the Kirby Framework which assumes the timing of anthesis is a result of the timing of flag leaf and an additional thermal time passage from there to heading then anthesis.  It also assumes the timing of flag leaf is a result of the Final Leaf Number (which sets a target) and leaf appearance rate (which sets the rate of progress toward the target).  Leaf appearance rate is a function of Thermal time and a genotype specific Phyllochron which changes with Haun stage as described by [Jamieson_LeafAppearance_1995].  \n\nFinal Leaf Number (FLN) is set on the day that terminal spikelet occurs as: \n\nFLN = 2.85 + 1.1 * TSHS  \n\nWhere TSHS is the Haun stage on the day terminal spikelet stage occurs.  Terminal spikelet is at the end of the SpikeletDifferentaiation phase which is preceeded by the Emerging and Vernalising phases.  The mechanisums for progress through each of these phase are described below",
               "Name": "Environmental responses",
               "ResourceName": null,
               "Children": [],
@@ -744,6 +739,7 @@
                 },
                 {
                   "$type": "Models.Functions.ExpressionFunction, Models",
+                  "Units": null,
                   "Expression": "[Leaf].ExpandedCohortNo + [Leaf].NextExpandingLeafProportion",
                   "Name": "LeafNumber",
                   "ResourceName": null,
@@ -1273,6 +1269,84 @@
                 {
                   "$type": "Models.Functions.VariableReference, Models",
                   "VariableName": "[Plant].DaysAfterSowing",
+                  "Name": "PostEventValue",
+                  "ResourceName": null,
+                  "Children": [],
+                  "Enabled": true,
+                  "ReadOnly": false
+                }
+              ],
+              "Enabled": true,
+              "ReadOnly": false
+            },
+            {
+              "$type": "Models.Functions.OnEventFunction, Models",
+              "SetEvent": "DoubleRidge",
+              "ReSetEvent": "never",
+              "Name": "DoubleRidgeDAS",
+              "ResourceName": null,
+              "Children": [
+                {
+                  "$type": "Models.Memo, Models",
+                  "Text": "\nA function is used to provide DoubleRidge date as days after sowing(DAS).\n",
+                  "Name": "memo",
+                  "ResourceName": null,
+                  "Children": [],
+                  "Enabled": true,
+                  "ReadOnly": false
+                },
+                {
+                  "$type": "Models.Functions.Constant, Models",
+                  "FixedValue": 0.0,
+                  "Units": null,
+                  "Name": "PreEventValue",
+                  "ResourceName": null,
+                  "Children": [],
+                  "Enabled": true,
+                  "ReadOnly": false
+                },
+                {
+                  "$type": "Models.Functions.VariableReference, Models",
+                  "VariableName": "[Plant].DaysAfterSowing",
+                  "Name": "PostEventValue",
+                  "ResourceName": null,
+                  "Children": [],
+                  "Enabled": true,
+                  "ReadOnly": false
+                }
+              ],
+              "Enabled": true,
+              "ReadOnly": false
+            },
+            {
+              "$type": "Models.Functions.OnEventFunction, Models",
+              "SetEvent": "DoubleRidge",
+              "ReSetEvent": "never",
+              "Name": "DoubleRidgePhotoperiod",
+              "ResourceName": null,
+              "Children": [
+                {
+                  "$type": "Models.Memo, Models",
+                  "Text": "\nA function is used to provide Photoperiod at Double Ridge (hours).\n",
+                  "Name": "memo",
+                  "ResourceName": null,
+                  "Children": [],
+                  "Enabled": true,
+                  "ReadOnly": false
+                },
+                {
+                  "$type": "Models.Functions.Constant, Models",
+                  "FixedValue": 0.0,
+                  "Units": null,
+                  "Name": "PreEventValue",
+                  "ResourceName": null,
+                  "Children": [],
+                  "Enabled": true,
+                  "ReadOnly": false
+                },
+                {
+                  "$type": "Models.Functions.VariableReference, Models",
+                  "VariableName": "[Phenology].Photoperiod",
                   "Name": "PostEventValue",
                   "ResourceName": null,
                   "Children": [],
@@ -2648,6 +2722,7 @@
             },
             {
               "$type": "Models.Functions.ExpressionFunction, Models",
+              "Units": null,
               "Expression": "divide(([Grain].Live.N + [Grain].Dead.N),([Grain].Live.Wt + [Grain].Dead.Wt)) * 100 * 5.71",
               "Name": "Protein",
               "ResourceName": null,
@@ -2781,12 +2856,39 @@
               ],
               "Enabled": true,
               "ReadOnly": false
+            },
+            {
+              "$type": "Models.Functions.ProtectedDivideFunction, Models",
+              "NumeratorErrVal": 0.0,
+              "DenominatorErrVal": 0.0,
+              "Name": "WtProportion",
+              "ResourceName": null,
+              "Children": [
+                {
+                  "$type": "Models.Functions.VariableReference, Models",
+                  "VariableName": "[Grian].Wt",
+                  "Name": "LiveWt",
+                  "ResourceName": null,
+                  "Children": [],
+                  "Enabled": true,
+                  "ReadOnly": false
+                },
+                {
+                  "$type": "Models.Functions.VariableReference, Models",
+                  "VariableName": "[Plant].AboveGround.Wt",
+                  "Name": "AboveGround",
+                  "ResourceName": null,
+                  "Children": [],
+                  "Enabled": true,
+                  "ReadOnly": false
+                }
+              ],
+              "Enabled": true,
+              "ReadOnly": false
             }
           ],
           "Enabled": true,
-          "ReadOnly": false,
-          "MaxNConc": null,
-          "MinNConc": null
+          "ReadOnly": false
         },
         {
           "$type": "Models.PMF.Organs.Root, Models",
@@ -2795,6 +2897,10 @@
           "DMDemand": null,
           "NDemand": null,
           "potentialDMAllocation": null,
+          "WaterUptakeSupply": null,
+          "NitrogenUptakeSupply": null,
+          "WaterTakenUp": null,
+          "NitrogenTakenUp": null,
           "GrowthRespiration": 0.0,
           "MaintenanceRespiration": 0.0,
           "Name": "Root",
@@ -3535,9 +3641,7 @@
             }
           ],
           "Enabled": true,
-          "ReadOnly": false,
-          "MaxNConc": null,
-          "MinNConc": null
+          "ReadOnly": false
         },
         {
           "$type": "Models.PMF.Organs.Leaf, Models",
@@ -5241,17 +5345,76 @@
             },
             {
               "$type": "Models.Functions.VariableReference, Models",
-              "VariableName": "[Structure].BranchNumber",
-              "Name": "StemNumberPerPlant",
+              "VariableName": "[Plant].SowingData.Population",
+              "Name": "MainStemPopulation",
               "ResourceName": null,
               "Children": [],
               "Enabled": true,
               "ReadOnly": false
             },
             {
-              "$type": "Models.Functions.VariableReference, Models",
-              "VariableName": "[Plant].SowingData.Population",
-              "Name": "MainStemPopulation",
+              "$type": "Models.Functions.ProtectedDivideFunction, Models",
+              "NumeratorErrVal": 0.0,
+              "DenominatorErrVal": 0.0,
+              "Name": "LiveWtProportion",
+              "ResourceName": null,
+              "Children": [
+                {
+                  "$type": "Models.Functions.VariableReference, Models",
+                  "VariableName": "[Leaf].Live.Wt",
+                  "Name": "LiveWt",
+                  "ResourceName": null,
+                  "Children": [],
+                  "Enabled": true,
+                  "ReadOnly": false
+                },
+                {
+                  "$type": "Models.Functions.VariableReference, Models",
+                  "VariableName": "[Plant].AboveGround.Wt",
+                  "Name": "AboveGround",
+                  "ResourceName": null,
+                  "Children": [],
+                  "Enabled": true,
+                  "ReadOnly": false
+                }
+              ],
+              "Enabled": true,
+              "ReadOnly": false
+            },
+            {
+              "$type": "Models.Functions.ProtectedDivideFunction, Models",
+              "NumeratorErrVal": 0.0,
+              "DenominatorErrVal": 0.0,
+              "Name": "DeadWtProportion",
+              "ResourceName": null,
+              "Children": [
+                {
+                  "$type": "Models.Functions.VariableReference, Models",
+                  "VariableName": "[Leaf].Dead.Wt",
+                  "Name": "DeadWt",
+                  "ResourceName": null,
+                  "Children": [],
+                  "Enabled": true,
+                  "ReadOnly": false
+                },
+                {
+                  "$type": "Models.Functions.VariableReference, Models",
+                  "VariableName": "[Plant].AboveGround.Wt",
+                  "Name": "AboveGround",
+                  "ResourceName": null,
+                  "Children": [],
+                  "Enabled": true,
+                  "ReadOnly": false
+                }
+              ],
+              "Enabled": true,
+              "ReadOnly": false
+            },
+            {
+              "$type": "Models.Functions.ExpressionFunction, Models",
+              "Units": "/plant",
+              "Expression": "[Structure].BranchNumber + 1",
+              "Name": "StemNumberPerPlant",
               "ResourceName": null,
               "Children": [],
               "Enabled": true,
@@ -5259,8 +5422,7 @@
             }
           ],
           "Enabled": true,
-          "ReadOnly": false,
-          "MinNConc": null
+          "ReadOnly": false
         },
         {
           "$type": "Models.PMF.Organs.GenericOrgan, Models",
@@ -6049,10 +6211,7 @@
             }
           ],
           "Enabled": true,
-          "ReadOnly": false,
-          "MaxNConc": null,
-          "MinNConc": null,
-          "CritNConc": null
+          "ReadOnly": false
         },
         {
           "$type": "Models.PMF.Organs.GenericOrgan, Models",
@@ -6901,13 +7060,39 @@
               "Children": [],
               "Enabled": true,
               "ReadOnly": false
+            },
+            {
+              "$type": "Models.Functions.ProtectedDivideFunction, Models",
+              "NumeratorErrVal": 0.0,
+              "DenominatorErrVal": 0.0,
+              "Name": "WtProportion",
+              "ResourceName": null,
+              "Children": [
+                {
+                  "$type": "Models.Functions.VariableReference, Models",
+                  "VariableName": "[Stem].Wt",
+                  "Name": "Wt",
+                  "ResourceName": null,
+                  "Children": [],
+                  "Enabled": true,
+                  "ReadOnly": false
+                },
+                {
+                  "$type": "Models.Functions.VariableReference, Models",
+                  "VariableName": "[Plant].AboveGround.Wt",
+                  "Name": "AboveGround",
+                  "ResourceName": null,
+                  "Children": [],
+                  "Enabled": true,
+                  "ReadOnly": false
+                }
+              ],
+              "Enabled": true,
+              "ReadOnly": false
             }
           ],
           "Enabled": true,
-          "ReadOnly": false,
-          "MaxNConc": null,
-          "MinNConc": null,
-          "CritNConc": null
+          "ReadOnly": false
         },
         {
           "$type": "Models.PMF.CompositeBiomass, Models",
@@ -7040,6 +7225,35 @@
               "Children": [],
               "Enabled": true,
               "ReadOnly": false
+            },
+            {
+              "$type": "Models.Functions.ProtectedDivideFunction, Models",
+              "NumeratorErrVal": 0.0,
+              "DenominatorErrVal": 0.0,
+              "Name": "WtProportion",
+              "ResourceName": null,
+              "Children": [
+                {
+                  "$type": "Models.Functions.VariableReference, Models",
+                  "VariableName": "[Ear].Wt",
+                  "Name": "Wt",
+                  "ResourceName": null,
+                  "Children": [],
+                  "Enabled": true,
+                  "ReadOnly": false
+                },
+                {
+                  "$type": "Models.Functions.VariableReference, Models",
+                  "VariableName": "[Plant].AboveGround.Wt",
+                  "Name": "AboveGround",
+                  "ResourceName": null,
+                  "Children": [],
+                  "Enabled": true,
+                  "ReadOnly": false
+                }
+              ],
+              "Enabled": true,
+              "ReadOnly": false
             }
           ],
           "Enabled": true,
@@ -7062,14 +7276,12 @@
         {
           "$type": "Models.Core.Folder, Models",
           "ShowInDocs": false,
-          "GraphsPerPage": 6,
           "Name": "Cultivars",
           "ResourceName": null,
           "Children": [
             {
               "$type": "Models.Core.Folder, Models",
               "ShowInDocs": false,
-              "GraphsPerPage": 6,
               "Name": "New Zealand",
               "ResourceName": null,
               "Children": [
@@ -7099,7 +7311,6 @@
                     "[Phenology].HeadEmergencePpSensitivity.FixedValue = 3.8423212708469157",
                     "[Phenology].Phyllochron.BasePhyllochron.FixedValue = 100.0",
                     "[Leaf].ExtinctionCoeff.VegetativePhase.FixedValue = 0.7",
-                    "[Grain].NumberFunction.GrainNumber.GrainsPerGramOfStem.FixedValue = 18",
                     "[Phenology].PhyllochronPpSensitivity.FixedValue = 0.6",
                     "[Phenology].CAMP.FLNparams.MinLN = 8.15781757053076",
                     "[Phenology].CAMP.FLNparams.PpLN = 3.6074343511019427",
@@ -7121,7 +7332,6 @@
                     "[Phenology].HeadEmergencePpSensitivity.FixedValue = 0.006727231500210627",
                     "[Phenology].Phyllochron.BasePhyllochron.FixedValue = 100.0",
                     "[Leaf].ExtinctionCoeff.VegetativePhase.FixedValue = 0.7",
-                    "[Grain].NumberFunction.GrainNumber.GrainsPerGramOfStem.FixedValue = 22",
                     "[Phenology].PhyllochronPpSensitivity.FixedValue = 0.6",
                     "[Phenology].CAMP.FLNparams.MinLN = 8.25262475446035",
                     "[Phenology].CAMP.FLNparams.PpLN = 7.552256317837019",
@@ -7152,7 +7362,32 @@
                   ],
                   "Name": "Claire",
                   "ResourceName": null,
-                  "Children": [],
+                  "Children": [
+                    {
+                      "$type": "Models.Core.Alias, Models",
+                      "Name": "Savannah",
+                      "ResourceName": null,
+                      "Children": [],
+                      "Enabled": true,
+                      "ReadOnly": false
+                    },
+                    {
+                      "$type": "Models.Core.Alias, Models",
+                      "Name": "Atlanta",
+                      "ResourceName": null,
+                      "Children": [],
+                      "Enabled": true,
+                      "ReadOnly": false
+                    },
+                    {
+                      "$type": "Models.Core.Alias, Models",
+                      "Name": "Istabraq",
+                      "ResourceName": null,
+                      "Children": [],
+                      "Enabled": true,
+                      "ReadOnly": false
+                    }
+                  ],
                   "Enabled": true,
                   "ReadOnly": false
                 },
@@ -7423,16 +7658,17 @@
                     "[Phenology].Phyllochron.BasePhyllochron.FixedValue = 105.0",
                     "[Leaf].ExtinctionCoeff.VegetativePhase.FixedValue = 0.75",
                     "[Grain].NumberFunction.GrainNumber.GrainsPerGramOfStem.FixedValue = 26",
-                    "[Grain].MaximumPotentialGrainSize.FixedValue = 0.045",
+                    "[Grain].MaximumPotentialGrainSize.FixedValue = 0.05",
                     "[Leaf].CohortParameters.MaxArea.AreaLargestLeaves.FixedValue = 3000",
                     "[Phenology].PhyllochronPpSensitivity.FixedValue = 0.33",
                     "[Phenology].CAMP.FLNparams.MinLN = 10",
-                    "[Phenology].CAMP.FLNparams.PpLN = 12",
-                    "[Phenology].CAMP.FLNparams.VrnLN = 12",
-                    "[Phenology].CAMP.FLNparams.VxPLN = 4",
+                    "[Phenology].CAMP.FLNparams.PpLN = 6",
+                    "[Phenology].CAMP.FLNparams.VrnLN = 4",
+                    "[Phenology].CAMP.FLNparams.VxPLN = 0",
                     "[Phenology].HeadEmergencePpSensitivity.FixedValue = 8",
                     "[Phenology].CAMP.EnvData.VrnTreatTemp = 6",
-                    "[Phenology].CAMP.EnvData.VrnTreatDuration = 60"
+                    "[Phenology].CAMP.EnvData.VrnTreatDuration = 60",
+                    "[Phenology].GrainFilling.Target.FixedValue = 700"
                   ],
                   "Name": "Voltron",
                   "ResourceName": null,
@@ -7447,16 +7683,17 @@
                     "[Phenology].Phyllochron.BasePhyllochron.FixedValue = 105.0",
                     "[Leaf].ExtinctionCoeff.VegetativePhase.FixedValue = 0.75",
                     "[Grain].NumberFunction.GrainNumber.GrainsPerGramOfStem.FixedValue = 26",
-                    "[Grain].MaximumPotentialGrainSize.FixedValue = 0.045",
+                    "[Grain].MaximumPotentialGrainSize.FixedValue = 0.05",
                     "[Leaf].CohortParameters.MaxArea.AreaLargestLeaves.FixedValue = 3000",
                     "[Phenology].PhyllochronPpSensitivity.FixedValue = 0.33",
                     "[Phenology].CAMP.FLNparams.MinLN = 10",
-                    "[Phenology].CAMP.FLNparams.PpLN = 12",
-                    "[Phenology].CAMP.FLNparams.VrnLN = 12",
-                    "[Phenology].CAMP.FLNparams.VxPLN = 4",
+                    "[Phenology].CAMP.FLNparams.PpLN = 6",
+                    "[Phenology].CAMP.FLNparams.VrnLN = 4",
+                    "[Phenology].CAMP.FLNparams.VxPLN = 0",
                     "[Phenology].HeadEmergencePpSensitivity.FixedValue = 8",
                     "[Phenology].CAMP.EnvData.VrnTreatTemp = 6",
-                    "[Phenology].CAMP.EnvData.VrnTreatDuration = 60"
+                    "[Phenology].CAMP.EnvData.VrnTreatDuration = 60",
+                    "[Phenology].GrainFilling.Target.FixedValue = 700"
                   ],
                   "Name": "Sorrial",
                   "ResourceName": null,
@@ -7470,17 +7707,18 @@
                     "[Phenology].HeadEmergenceLongDayBase.FixedValue = 50",
                     "[Phenology].Phyllochron.BasePhyllochron.FixedValue = 105.0",
                     "[Leaf].ExtinctionCoeff.VegetativePhase.FixedValue = 0.75",
-                    "[Grain].NumberFunction.GrainNumber.GrainsPerGramOfStem.FixedValue = 26",
-                    "[Grain].MaximumPotentialGrainSize.FixedValue = 0.045",
+                    "[Grain].NumberFunction.GrainNumber.GrainsPerGramOfStem.FixedValue = 28",
+                    "[Grain].MaximumPotentialGrainSize.FixedValue = 0.05",
                     "[Leaf].CohortParameters.MaxArea.AreaLargestLeaves.FixedValue = 3000",
                     "[Phenology].PhyllochronPpSensitivity.FixedValue = 0.33",
-                    "[Phenology].CAMP.FLNparams.MinLN = 10",
+                    "[Phenology].CAMP.FLNparams.MinLN = 8",
                     "[Phenology].CAMP.FLNparams.PpLN = 12",
                     "[Phenology].CAMP.FLNparams.VrnLN = 12",
                     "[Phenology].CAMP.FLNparams.VxPLN = 4",
                     "[Phenology].HeadEmergencePpSensitivity.FixedValue = 8",
                     "[Phenology].CAMP.EnvData.VrnTreatTemp = 6",
-                    "[Phenology].CAMP.EnvData.VrnTreatDuration = 60"
+                    "[Phenology].CAMP.EnvData.VrnTreatDuration = 60",
+                    "[Phenology].GrainFilling.Target.FixedValue = 700"
                   ],
                   "Name": "Cesario",
                   "ResourceName": null,
@@ -7498,7 +7736,7 @@
                     "[Grain].MaximumPotentialGrainSize.FixedValue = 0.045",
                     "[Leaf].CohortParameters.MaxArea.AreaLargestLeaves.FixedValue = 3000",
                     "[Phenology].PhyllochronPpSensitivity.FixedValue = 0.33",
-                    "[Phenology].CAMP.FLNparams.MinLN = 10",
+                    "[Phenology].CAMP.FLNparams.MinLN = 8",
                     "[Phenology].CAMP.FLNparams.PpLN = 12",
                     "[Phenology].CAMP.FLNparams.VrnLN = 12",
                     "[Phenology].CAMP.FLNparams.VxPLN = 4",
@@ -7567,7 +7805,7 @@
                     "[Phenology].Phyllochron.BasePhyllochron.FixedValue = 105.0",
                     "[Leaf].ExtinctionCoeff.VegetativePhase.FixedValue = 0.75",
                     "[Grain].NumberFunction.GrainNumber.GrainsPerGramOfStem.FixedValue = 26",
-                    "[Grain].MaximumPotentialGrainSize.FixedValue = 0.045",
+                    "[Grain].MaximumPotentialGrainSize.FixedValue = 0.05",
                     "[Leaf].CohortParameters.MaxArea.AreaLargestLeaves.FixedValue = 3000",
                     "[Phenology].PhyllochronPpSensitivity.FixedValue = 0.33",
                     "[Phenology].CAMP.FLNparams.MinLN = 10",
@@ -7576,7 +7814,8 @@
                     "[Phenology].CAMP.FLNparams.VxPLN = 4",
                     "[Phenology].HeadEmergencePpSensitivity.FixedValue = 8",
                     "[Phenology].CAMP.EnvData.VrnTreatTemp = 6",
-                    "[Phenology].CAMP.EnvData.VrnTreatDuration = 60"
+                    "[Phenology].CAMP.EnvData.VrnTreatDuration = 60",
+                    "[Phenology].GrainFilling.Target.FixedValue = 700"
                   ],
                   "Name": "Graham",
                   "ResourceName": null,
@@ -7590,8 +7829,6 @@
                     "[Phenology].HeadEmergenceLongDayBase.FixedValue = 50",
                     "[Phenology].Phyllochron.BasePhyllochron.FixedValue = 105.0",
                     "[Leaf].ExtinctionCoeff.VegetativePhase.FixedValue = 0.75",
-                    "[Grain].NumberFunction.GrainNumber.GrainsPerGramOfStem.FixedValue = 26",
-                    "[Grain].MaximumPotentialGrainSize.FixedValue = 0.045",
                     "[Leaf].CohortParameters.MaxArea.AreaLargestLeaves.FixedValue = 3000",
                     "[Phenology].PhyllochronPpSensitivity.FixedValue = 0.33",
                     "[Phenology].CAMP.FLNparams.MinLN = 10",
@@ -7600,7 +7837,10 @@
                     "[Phenology].CAMP.FLNparams.VxPLN = 4",
                     "[Phenology].HeadEmergencePpSensitivity.FixedValue = 8",
                     "[Phenology].CAMP.EnvData.VrnTreatTemp = 6",
-                    "[Phenology].CAMP.EnvData.VrnTreatDuration = 60"
+                    "[Phenology].CAMP.EnvData.VrnTreatDuration = 60",
+                    "[Phenology].GrainFilling.Target.FixedValue = 700",
+                    "[Grain].MaximumPotentialGrainSize.FixedValue = 0.045",
+                    "[Grain].NumberFunction.GrainNumber.GrainsPerGramOfStem.FixedValue = 30"
                   ],
                   "Name": "Kerrin",
                   "ResourceName": null,
@@ -7615,7 +7855,6 @@
             {
               "$type": "Models.Core.Folder, Models",
               "ShowInDocs": false,
-              "GraphsPerPage": 6,
               "Name": "Australia",
               "ResourceName": null,
               "Children": [
@@ -8164,7 +8403,16 @@
                   ],
                   "Name": "Hartog",
                   "ResourceName": null,
-                  "Children": [],
+                  "Children": [
+                    {
+                      "$type": "Models.Core.Alias, Models",
+                      "Name": "Corack",
+                      "ResourceName": null,
+                      "Children": [],
+                      "Enabled": true,
+                      "ReadOnly": false
+                    }
+                  ],
                   "Enabled": true,
                   "ReadOnly": false
                 },
@@ -9112,7 +9360,6 @@
             {
               "$type": "Models.Core.Folder, Models",
               "ShowInDocs": false,
-              "GraphsPerPage": 6,
               "Name": "NILs",
               "ResourceName": null,
               "Children": [
@@ -9423,7 +9670,6 @@
             {
               "$type": "Models.Core.Folder, Models",
               "ShowInDocs": false,
-              "GraphsPerPage": 6,
               "Name": "APP Generic",
               "ResourceName": null,
               "Children": [
@@ -9674,7 +9920,6 @@
             {
               "$type": "Models.Core.Folder, Models",
               "ShowInDocs": false,
-              "GraphsPerPage": 6,
               "Name": "Turkey",
               "ResourceName": null,
               "Children": [
@@ -9706,7 +9951,6 @@
             {
               "$type": "Models.Core.Folder, Models",
               "ShowInDocs": false,
-              "GraphsPerPage": 6,
               "Name": "China",
               "ResourceName": null,
               "Children": [
@@ -9732,7 +9976,6 @@
             {
               "$type": "Models.Core.Folder, Models",
               "ShowInDocs": false,
-              "GraphsPerPage": 6,
               "Name": "USA",
               "ResourceName": null,
               "Children": [
@@ -9827,7 +10070,6 @@
             {
               "$type": "Models.Core.Folder, Models",
               "ShowInDocs": false,
-              "GraphsPerPage": 6,
               "Name": "Europe",
               "ResourceName": null,
               "Children": [
@@ -9912,7 +10154,6 @@
             {
               "$type": "Models.Core.Folder, Models",
               "ShowInDocs": false,
-              "GraphsPerPage": 6,
               "Name": "Africa",
               "ResourceName": null,
               "Children": [
@@ -9940,7 +10181,6 @@
             {
               "$type": "Models.Core.Folder, Models",
               "ShowInDocs": false,
-              "GraphsPerPage": 6,
               "Name": "Iran",
               "ResourceName": null,
               "Children": [
@@ -9966,7 +10206,6 @@
             {
               "$type": "Models.Core.Folder, Models",
               "ShowInDocs": false,
-              "GraphsPerPage": 6,
               "Name": "Preliminary",
               "ResourceName": null,
               "Children": [
@@ -10463,7 +10702,6 @@
       "ReadOnly": false
     }
   ],
-  "IncludeInDocumentation": true,
   "Enabled": true,
   "ReadOnly": false
 }

@@ -1,18 +1,15 @@
-﻿
+﻿using System;
+using System.IO;
+using System.Net.NetworkInformation;
+using APSIM.Shared.Utilities;
+using UserInterface.Interfaces;
+using Models.CLEM;
+using Models.CLEM.Interfaces;
+using Models.Core;
+using UserInterface.Views;
+
 namespace UserInterface.Presenters
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Net.NetworkInformation;
-    using System.Reflection;
-    using System.Text;
-    using APSIM.Shared.Utilities;
-    using global::UserInterface.Interfaces;
-    using Models.CLEM;
-    using Models.CLEM.Interfaces;
-    using Models.Core;
-    using Views;
 
     /// <summary>
     /// Presenter to provide HTML description summary for CLEM models
@@ -34,7 +31,7 @@ namespace UserInterface.Presenters
         public void Attach(object model, object view, ExplorerPresenter explorerPresenter)
         {
             this.model = model as Model;
-            this.genericView = view as IMarkdownView; 
+            this.genericView = view as IMarkdownView;
             explorer = explorerPresenter;
 
             // save summary to disk when component is first pressed regardless of user selecting summary tab as now goes to html in browser
@@ -47,14 +44,14 @@ namespace UserInterface.Presenters
 
             htmlFilePath = Path.Combine(Path.GetDirectoryName(explorer.ApsimXFile.FileName), htmlFilePath);
             targetFilePath = Path.Combine(Path.GetDirectoryName(explorer.ApsimXFile.FileName), targetFilePath);
-            File.WriteAllText(htmlFilePath, CLEMModel.CreateDescriptiveSummaryHTML(this.model, Utility.Configuration.Settings.DarkTheme, markdown2Html: Utility.MarkdownConverter.ToHtml ));
+            File.WriteAllText(htmlFilePath, CLEMModel.CreateDescriptiveSummaryHTML(this.model, this.model.Node, Utility.Configuration.Settings.DarkTheme, markdown2Html: Utility.MarkdownConverter.ToHtml ));
         }
 
         public void Refresh()
         {
             this.genericView.Text = CreateMarkdown(this.model);
             // save summary to disk
-            File.WriteAllText(Path.Combine(Path.GetDirectoryName(explorer.ApsimXFile.FileName), "CurrentDescriptiveSummary.html"), CLEMModel.CreateDescriptiveSummaryHTML(this.model, Utility.Configuration.Settings.DarkTheme, markdown2Html: Utility.MarkdownConverter.ToHtml));
+            File.WriteAllText(Path.Combine(Path.GetDirectoryName(explorer.ApsimXFile.FileName), "CurrentDescriptiveSummary.html"), CLEMModel.CreateDescriptiveSummaryHTML(this.model, this.model.Node, Utility.Configuration.Settings.DarkTheme, markdown2Html: Utility.MarkdownConverter.ToHtml));
         }
 
         public string CreateMarkdown(Model modelToSummarise)

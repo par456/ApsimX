@@ -1,40 +1,38 @@
-﻿using APSIM.Interop.Mapping;
-using APSIM.Shared.Utilities;
-using Gtk;
+﻿using APSIM.Shared.Mapping;
+using APSIM.Numerics;
 using GLib;
-using UserInterface.Interfaces;
-using Mapsui;
+using Gtk;
+using Mapsui.Extensions;
 using Mapsui.Layers;
+using Models.Mapping;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using UserInterface.Interfaces;
 using Utility;
-using Mapsui.Extensions;
-using Microsoft.CodeAnalysis;
-using Models.Mapping;
-using DocumentationMap = APSIM.Shared.Documentation.Map;
 using DocumentationCoordinate = APSIM.Shared.Documentation.Mapping.Coordinate;
+using DocumentationMap = APSIM.Shared.Documentation.Map;
 
 namespace UserInterface.Views
 {
-    
+
 
     /// <remarks>
     /// This view is intended to diplay sites on a map. For the most part, in works, but it has a few flaws
-    /// and room for improvement. 
-    /// 
+    /// and room for improvement.
+    ///
     /// Probably the main flaw is that maps are often very slow to render, as the basemap needs
     /// to be downloaded.
-    /// 
-    /// Another flaw (a problem with Mapsui) is that it doesn't know how to "wrap" the map at the antimeridion 
+    ///
+    /// Another flaw (a problem with Mapsui) is that it doesn't know how to "wrap" the map at the antimeridion
     /// (International Date Line). This makes it impossible to produce a Pacific-centered map.
-    /// 
+    ///
     /// One enhancement that should be fairly easy to implement would be to allow the user to select the basemap.
     /// Currently it's just using OpenStreetMaps, but Bing maps and several others are readily available. The user
     /// could be presented with a drop-down list of alternative.
-    /// 
+    ///
     /// </remarks>
     public class MapView : ViewBase, IMapView
     {
@@ -59,7 +57,7 @@ namespace UserInterface.Views
         private int defaultHeight = 718;
 
         private Mapsui.Map map;
-        private Mapsui.Navigator navigator = new Mapsui.Navigator();
+        private Mapsui.Navigator navigator;
         private Gtk.Image image;
         private Gtk.EventBox container;
 
@@ -118,7 +116,7 @@ namespace UserInterface.Views
                 var centerMetric = Mapsui.Projections.SphericalMercator.FromLonLat(value.Longitude, value.Latitude);
                 // Refreshing the map is a bit slow, so only do it if
                 // the incoming value is different to the old value.
-                if (map != null && 
+                if (map != null &&
                     (!MathUtilities.FloatsAreEqual(centerMetric.x, navigator.Viewport.CenterX)
                     || !MathUtilities.FloatsAreEqual(centerMetric.y, navigator.Viewport.CenterY)) )
                 {
@@ -154,7 +152,7 @@ namespace UserInterface.Views
             container = new Gtk.EventBox();
             container.Add(image);
 
-            Paned box = new Paned(Orientation.Vertical);
+            Paned box = new Paned(Gtk.Orientation.Vertical);
             PropertiesView = new PropertyView(this);
             box.Add1(((ViewBase)PropertiesView).MainWidget);
 
@@ -188,7 +186,7 @@ namespace UserInterface.Views
         public Gdk.Pixbuf Export()
         {
             Mapsui.Rendering.Skia.MapRenderer renderer = new Mapsui.Rendering.Skia.MapRenderer();
-            MemoryStream stream = renderer.RenderToBitmapStream(navigator.Viewport, map.Layers, map.BackColor, 1);
+            MemoryStream stream = renderer.RenderToBitmapStream(map, 1);
             stream.Seek(0, SeekOrigin.Begin);
             return new Gdk.Pixbuf(stream);
         }
@@ -217,9 +215,10 @@ namespace UserInterface.Views
                 convertedMarkers.Add(new DocumentationCoordinate(coord.Latitude, coord.Longitude));
 
             map = new DocumentationMap(
-                new DocumentationCoordinate(center.Latitude, center.Longitude), 
-                zoom, 
+                new DocumentationCoordinate(center.Latitude, center.Longitude),
+                zoom,
                 convertedMarkers).ToMapsuiMap();
+            navigator = map.Navigator;
 
             navigator.SetSize(defaultWidth, defaultHeight);
             if (image.Allocation.Width > 1 && image.Allocation.Height > 1)
@@ -237,15 +236,14 @@ namespace UserInterface.Views
             if (map != null)
             {
                 UpdateMapSize();
-                Mapsui.Tiling.Layers.TileLayer osmLayer = map.Layers.FindLayer("OpenStreetMap").FirstOrDefault() as Mapsui.Tiling.Layers.TileLayer; 
-                if (osmLayer != null) 
+                Mapsui.Tiling.Layers.TileLayer osmLayer = map.Layers.FindLayer("OpenStreetMap").FirstOrDefault() as Mapsui.Tiling.Layers.TileLayer;
+                if (osmLayer != null)
                 {
                     osmLayer.Enabled = true;
-                    osmLayer.AbortFetch();
+                    map.AbortFetch();
                     osmLayer.ClearCache();
                     osmLayer.DataChanged += OsmLayer_DataChanged;
-                    MSection mSection = new MSection(navigator.Viewport.ToExtent(), navigator.Viewport.Resolution);
-                    osmLayer.RefreshData(new FetchInfo(mSection)); 
+                    map.RefreshData();
                 }
             }
         }
@@ -262,31 +260,30 @@ namespace UserInterface.Views
         private void OsmLayer_DataChanged(object sender, Mapsui.Fetcher.DataChangedEventArgs e)
         {
             Mapsui.Tiling.Layers.TileLayer osmLayer = (Mapsui.Tiling.Layers.TileLayer)sender;
-            if (((!osmLayer.Busy && e.Error == null) || e.Error != null) && !e.Cancelled)
+            if (((!osmLayer.Busy && e.Error == null) || e.Error != null))
             {
-                if (e.Error != null) 
+                if (e.Error != null)
                 // Try to handle failure to fetch Open Street Map layer
                 // by displaying the country outline layer instead
                 {
+                    map.AbortFetch();
                     osmLayer.DataChanged -= OsmLayer_DataChanged;
-                    osmLayer.AbortFetch();
                     osmLayer.Enabled = false;
                     Layer countryLayer = map.Layers.FindLayer("Countries").FirstOrDefault() as Layer;
                     if (countryLayer != null)
                     {
                         countryLayer.Enabled = true;
-                        MSection mSection = new MSection(navigator.Viewport.ToExtent(), navigator.Viewport.Resolution);
-                        countryLayer.RefreshData(new FetchInfo(mSection)); 
+                        map.RefreshData();
                         // Give the "country" layer time to be loaded, if necessary.
-                        // Seven seconds should be way more than enough...
+                        // A second should be way more than enough...
                         int nSleeps = 0;
-                        while (countryLayer.Busy && nSleeps++ < 700)
+                        while (countryLayer.Busy && nSleeps++ < 100)
                             System.Threading.Thread.Sleep(10);
                     }
                 }
                 osmLayer.DataChanged -= OsmLayer_DataChanged;
                 Mapsui.Rendering.Skia.MapRenderer renderer = new Mapsui.Rendering.Skia.MapRenderer();
-                MemoryStream stream = renderer.RenderToBitmapStream(navigator.Viewport, map.Layers, map.BackColor, 1);
+                MemoryStream stream = renderer.RenderToBitmapStream(map, 1);
                 stream.Seek(0, SeekOrigin.Begin);
                 InvokeOnMainThread(delegate { image.Pixbuf = new Gdk.Pixbuf(stream); });
             }
@@ -306,14 +303,14 @@ namespace UserInterface.Views
             lat = coord.Y;
             lon = coord.X;
         }
-    
+
         /// <summary>
         /// Traps the Exposed event for the image. This event fires after
         /// size/space allocation has occurred but before it is actually
         /// drawn on the screen. Because the size-allocated signal is emitted
         /// several times, we don't want to refresh the map each time.
         /// Therefore, we refresh the map once, during the expose event.
-        /// 
+        ///
         /// We also disconnect the event handler after refreshing the map so
         /// that we don't refresh it multiple times unnecessarily.
         /// </summary>

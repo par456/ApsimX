@@ -19,6 +19,10 @@ using Models.AgPasture;
 using Models.Soils.Nutrients;
 using APSIM.Documentation.Bibliography;
 using ModelsMap = Models.Map;
+using APSIM.Core;
+using System.IO;
+using System.Linq;
+using APSIM.Shared.Utilities;
 
 namespace APSIM.Documentation.Models
 {
@@ -54,6 +58,7 @@ namespace APSIM.Documentation.Models
                 {typeof(ModelsMap), typeof(DocMap)},
                 {typeof(BoundFunction), typeof(DocBoundFunction)},
                 {typeof(Memo), typeof(DocMemo)},
+                {typeof(M.Documentation), typeof(DocMemo)},
                 {typeof(Structure), typeof(DocStructure)},
                 {typeof(Folder),typeof(DocFolder)},
                 {typeof(LinearInterpolationFunction), typeof(DocLinearInterpolationFunction)},
@@ -69,7 +74,6 @@ namespace APSIM.Documentation.Models
                 {typeof(NodeNumberPhase), typeof(DocPhase)},
                 {typeof(LeafDeathPhase), typeof(DocPhase)},
                 {typeof(LeafAppearancePhase), typeof(DocPhase)},
-                {typeof(GrazeAndRewind), typeof(DocPhase)},
                 {typeof(GotoPhase), typeof(DocPhase)},
                 {typeof(GerminatingPhase), typeof(DocPhase)},
                 {typeof(GenericPhase), typeof(DocPhase)},
@@ -119,7 +123,8 @@ namespace APSIM.Documentation.Models
             List<ITag> newTags;
             newTags = AutoDocumentation.DocumentModel(model);
             newTags = DocumentationUtilities.CleanEmptySections(newTags);
-            newTags = DocumentationUtilities.AddHeader(model.Name, newTags);
+            string name = DocumentationUtilities.GetDocumentationName(model);
+            newTags = DocumentationUtilities.AddHeader(name, newTags);
             return newTags;
         }
 
@@ -131,9 +136,9 @@ namespace APSIM.Documentation.Models
 
             DefineFunctions().TryGetValue(model.GetType(), out Type docType);
 
-            if (docType != null) 
+            if (docType != null)
             {
-                object documentClass = Activator.CreateInstance(docType, new object[]{model});
+                object documentClass = Activator.CreateInstance(docType, new object[] { model });
                 newTags = (documentClass as DocGeneric).Document(0);
             }
             else if (docType == null && model as IFunction != null)
@@ -146,6 +151,31 @@ namespace APSIM.Documentation.Models
             }
             return newTags;
         }
+        
+        /// <summary>Writes only the documentation header</summary>
+        /// <param name="model">The model to get documentation for.</param>
+        public static List<ITag> DocumentHeader(IModel model)
+        {
+            Simulations sims = null;
+            if (model is Simulations)
+                sims = model as Simulations;
+            else
+                model.Node.FindParent<Simulations>(recurse: true);
+
+            string rootPath = PathUtilities.GetAbsolutePath("%root%", null);
+            string filePath = PathUtilities.GetAbsolutePath(sims.FileName, null);
+
+            Section all = new Section(Path.GetFileNameWithoutExtension(sims.FileName));
+            foreach (IModel child in model.Node.FindChildren<Memo>())
+                all.Children.AddRange(AutoDocumentation.DocumentModel(child).ToList());
+
+            List<ITag> tags = new List<ITag>();
+            if (filePath.Contains(rootPath))
+                tags.Add(WebDocs.AddHeaderImageTag());
+            tags.Add(all);
+
+            return tags;
+        }
     }
-    
+
 }

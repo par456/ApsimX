@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Linq;
+using APSIM.Core;
+using APSIM.Numerics;
 using APSIM.Shared.APSoil;
 using APSIM.Shared.Utilities;
 using Models.Climate;
@@ -19,8 +21,13 @@ namespace Models.Soils
     [ViewName("ApsimNG.Resources.Glade.ProfileView.glade")]
     [PresenterName("UserInterface.Presenters.ProfilePresenter")]
     [ValidParent(ParentType = typeof(Soil))]
-    public class WEIRDO : Model, ISoilWater
+    public class WEIRDO : Model, ISoilWater, IStructureDependency
     {
+        /// <summary>Structure instance supplied by APSIM.core.</summary>
+        [field: NonSerialized]
+        public IStructure Structure { private get; set; }
+
+
         #region IsoilInterface
         /// <summary> The amount of rainfall intercepted by crop and residue canopies </summary>
         public double PrecipitationInterception { get; set; }
@@ -144,7 +151,12 @@ namespace Models.Soils
             {
                 IPhysical physical = soilPhysical;
                 if (physical == null) //So that the GUI can find physical when calling this
-                    physical = FindAncestor<Soil>()?.FindDescendant<IPhysical>() ?? FindInScope<IPhysical>();
+                {
+                    var soil = Structure.FindParent<Soil>(recurse: true);
+                    if (soil != null)
+                        physical = Structure.FindChild<IPhysical>(relativeTo: soil, recurse: true)
+                            ?? Structure.Find<IPhysical>();
+                }
                 return APSoilUtilities.CalcPAWC(physical.Thickness, physical.LL15, physical.DUL, null);
             }
         }
@@ -166,14 +178,19 @@ namespace Models.Soils
 
         /// <summary>Plant available water CAPACITY (DUL-LL15).</summary>
         [Units("mm")]
-        [Display(Format = "N0", ShowTotal = true)]
+        [Display(Format = "N0")]
         [JsonIgnore]
         public double[] PAWCmm {
             get
             {
                 IPhysical physical = soilPhysical;
                 if (physical == null) //So that the GUI can find physical when calling this
-                    physical = FindAncestor<Soil>()?.FindDescendant<IPhysical>() ?? FindInScope<IPhysical>();
+                {
+                    var soil = Structure.FindParent<Soil>(recurse: true);
+                    if (soil != null)
+                        physical = Structure.FindChild<IPhysical>(relativeTo: soil, recurse: true)
+                            ?? Structure.Find<IPhysical>();
+                }
                 return MathUtilities.Multiply(PAWC, physical.Thickness);
             }
         }
@@ -236,15 +253,17 @@ namespace Models.Soils
         ///<summary> Who knows</summary>
         [JsonIgnore]
         public double SummerU { get; set; }
+
         ///<summary> Who knows</summary>
         [JsonIgnore]
         public double[] SW { get; set; }
-        ///<summary> Who knows</summary>
 
-        public double[] SWCON { get; set; }
         ///<summary> Who knows</summary>
         [JsonIgnore]
-        public double[] SWmm { get; set; }
+        public double[] SWmm => SW == null ? null : MathUtilities.Multiply(SW, Thickness);
+
+        ///<summary> Who knows</summary>
+        public double[] SWCON { get; set; }
 
         ///<summary> Who knows</summary>
         [JsonIgnore]
@@ -608,7 +627,6 @@ namespace Models.Soils
             PercolationCapacityBelow = new double[ProfileLayers];
             LayerHeight = new double[ProfileLayers];
             KS = new double[ProfileLayers];
-            SWmm = new double[ProfileLayers];
             LL15mm = new double[ProfileLayers];
             DULmm = new double[ProfileLayers];
             SATmm = new double[ProfileLayers];
@@ -645,6 +663,9 @@ namespace Models.Soils
                     Theta[l][c] = new double();
                 }
             }
+
+            //Initialise our SW here
+            SW = water.InitialValues.Clone() as double[];
 
             SetSoilProperties(); //Calls a function that applies soil parameters to calculate and set the properties for the soil
 
@@ -1201,7 +1222,6 @@ namespace Models.Soils
                 }
                 if (Math.Abs(AccumWaterVolume - water.Volumetric[l]) > FloatingPointTolerance)
                     throw new Exception(this + " Initial water content has not been correctly partitioned between pore compartments in layer" + l);
-                SWmm[l] = LayerSum(Pores[l], "WaterDepth");
                 SW[l] = LayerSum(Pores[l], "WaterDepth") / Thickness[l];
                 KS[l] = LayerSum(Pores[l], "PoiseuilleFlow");
                 DULmm[l] = soilPhysical.DUL[l] * Thickness[l];
@@ -1329,7 +1349,6 @@ namespace Models.Soils
         {
             for (int l = ProfileLayers - 1; l >= 0; l--)
             {
-                SWmm[l] = LayerSum(Pores[l], "WaterDepth");
                 SW[l] = LayerSum(Pores[l], "WaterDepth") / Thickness[l];
             }
         }

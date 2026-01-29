@@ -1,9 +1,10 @@
-﻿namespace UnitTests.Report
+﻿using Models.Storage;
+using NUnit.Framework;
+using System;
+using System.Collections.Generic;
+
+namespace UnitTests.Report
 {
-    using System;
-    using System.Collections.Generic;
-    using Models.Storage;
-    using NUnit.Framework;
 
     [TestFixture]
     public class ReportDataTests

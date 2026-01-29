@@ -3,6 +3,7 @@ using System;
 using Models.Interfaces;
 using APSIM.Shared.Utilities;
 using System.Collections.Generic;
+using APSIM.Numerics;
 
 namespace Models.Soils.Nutrients
 {
@@ -12,7 +13,7 @@ namespace Models.Soils.Nutrients
     [Serializable]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
     [ViewName("UserInterface.Views.PropertyView")]
-    [ValidParent(ParentType = typeof(Nutrient))]
+    [ValidParent(ParentType = typeof(Soil))]
     public class NH3Volatilisation : Model
     {
 

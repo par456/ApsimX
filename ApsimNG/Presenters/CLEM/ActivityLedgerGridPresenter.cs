@@ -1,14 +1,15 @@
-﻿namespace UserInterface.Presenters
+﻿using UserInterface.Interfaces;
+using Models;
+using Models.CLEM.Reporting;
+using Models.Core;
+using Models.Factorial;
+using Models.Storage;
+using System;
+using System.IO;
+using UserInterface.Views;
+
+namespace UserInterface.Presenters
 {
-    using global::UserInterface.Interfaces;
-    using Models;
-    using Models.CLEM.Reporting;
-    using Models.Core;
-    using Models.Factorial;
-    using Models.Storage;
-    using System;
-    using System.IO;
-    using Views;
 
     /// <summary>A data store presenter connecting a data store model with a data store view</summary>
     public class ActivityLedgerGridPresenter : IPresenter, IRefreshPresenter, ICLEMPresenter
@@ -54,13 +55,13 @@
 
                 Model report = clemPresenter.Model as Model;
 
-                Simulations simulations = report.FindAncestor<Simulations>();
+                Simulations simulations = report.Node.FindParent<Simulations>(recurse: true);
                 if (simulations != null)
-                    dataStore = simulations.FindChild<IDataStore>();
+                    dataStore = simulations.Node.FindChild<IDataStore>();
 
                 DataStorePresenter dataStorePresenter = new DataStorePresenter();
-                Simulation simulation = report.FindAncestor<Simulation>();
-                Zone paddock = report.FindAncestor<Zone>();
+                Simulation simulation = report.Node.FindParent<Simulation>(recurse: true);
+                Zone paddock = report.Node.FindParent<Zone>(recurse: true);
 
                 if (paddock != null)
                     dataStorePresenter.ZoneFilter = paddock;

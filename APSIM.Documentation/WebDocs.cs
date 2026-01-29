@@ -11,10 +11,10 @@ using System.Reflection;
 using APSIM.Shared.Utilities;
 using APSIM.Documentation.Models;
 using APSIM.Documentation.Bibliography;
-using Models.Core.ApsimFile;
 using APSIM.Shared.Mapping;
 using SkiaSharp;
 using APSIM.Documentation.Graphing;
+using APSIM.Core;
 
 namespace APSIM.Documentation
 {
@@ -30,7 +30,7 @@ namespace APSIM.Documentation
         {
             if(name == "CLEM Documentation site")
                 return "";
-            
+
             string[] validations = GetValidationFolderNames(apsimDirectory);
             string[] tutorials = GetTutorialFileNames(apsimDirectory);
 
@@ -41,7 +41,7 @@ namespace APSIM.Documentation
                 name = "AgPasture";
             }
 
-            if(filename == "Lifecycle")
+            if (filename == "Lifecycle")
             {
                 filename = name.ToLower();
             }
@@ -55,38 +55,52 @@ namespace APSIM.Documentation
             if (tutorials.Contains(filename))
                 isTutorial = true;
 
-            if(filename == "SorghumDCaPST")
+            if (filename == "SorghumDCaPST")
             {
                 name = "DCaPST/Sorghum";
                 isValidation = true;
             }
 
-            filename += ".apsimx";
+            if (filename == "Agroforestry")
+            {
+                filename = "AgroforestrySystem";
+            }
             
+            if (filename == "Lucerne")
+            {
+                filename = "LucerneValidation";
+            }
+
+            filename += ".apsimx";
+
             string path = apsimDirectory;
             if (isValidation)
                 path += "/Tests/Validation/" + name + "/" + filename;
             else if (isTutorial && filename == "lifecycle.apsimx")
                 path += "/Examples/Tutorials/Lifecycle/" + filename;
             else if (isTutorial && filename =="CLEM_Example_Cropping.apsimx")
-                path += "/Examples/CLEM/" + filename;     
+                path += "/Examples/CLEM/" + filename;
             else if (isTutorial && filename =="CLEM_Example_Grazing.apsimx")
-                path += "/Examples/CLEM/" + filename;         
+                path += "/Examples/CLEM/" + filename;
             else if (isTutorial)
                 path += "/Examples/Tutorials/" + filename;
             else
                 throw new Exception($"Provided name \"{name}\", does not match any validation folders or tutorial files.");
 
-            Simulations sims = FileFormat.ReadFromFile<Simulations>(path, e => throw e, false, compileManagerScripts: false).NewModel as Simulations;
+            Simulations sims = FileFormat.ReadFromFile<Simulations>(path).Model as Simulations;
             return GenerateWeb(sims);
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public static string GetCSS()
         {
-            return ReflectionUtilities.GetResourceAsString("APSIM.Documentation.Resources.docs.css");
+            string css = "";
+            css += ReflectionUtilities.GetResourceAsString("APSIM.Documentation.Resources.prism.css");
+            css += "\n";
+            css += ReflectionUtilities.GetResourceAsString("APSIM.Documentation.Resources.docs.css");
+            return css;
         }
 
         /// <summary>
@@ -96,7 +110,8 @@ namespace APSIM.Documentation
         public static string Generate(IModel model)
         {
             string html = GenerateWeb(model);
-            html = AddBoilerplate(model.Name + " Documentation", GetCSS(), html);
+            string name = DocumentationUtilities.GetDocumentationName(model);
+            html = AddBoilerplate($"{name} Documentation", GetCSS(), html);
             return html;
         }
 
@@ -138,22 +153,22 @@ namespace APSIM.Documentation
             html = RestoreHTMLSegments(html, htmlSegments);
             html = AddTableWrappers(html);
             html = AddCSSClasses(html);
-            html = AddContentWrapper(GetNavigationHTML(tags), html); 
-            
+            html = AddContentWrapper(GetNavigationHTML(tags), html);
+
 
             return html;
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
-        public static Image AddHeaderImageTag() 
+        public static Image AddHeaderImageTag()
         {
             return new Image("AIBanner.png");
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public static string GetNavigationHTML(List<ITag> tags)
         {
@@ -164,7 +179,6 @@ namespace APSIM.Documentation
             {
                 if (tag is Section section)
                 {
-
                     string id = section.Title.ToLower().Replace(" ", "-");
                     html += $"<a href=\"#{id}\"><div class=\"docs-nav\">{section.Title}</div></a>\n";
                 }
@@ -175,7 +189,7 @@ namespace APSIM.Documentation
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="resourceName">Resource file name.</param>
         public static SkiaSharp.SKImage LoadFromResource(string resourceName)
@@ -223,9 +237,9 @@ namespace APSIM.Documentation
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
-        public static string ConvertToMarkdown(List<ITag> tags, string heading) 
+        public static string ConvertToMarkdown(List<ITag> tags, string heading)
         {
             string output = "";
 
@@ -244,14 +258,14 @@ namespace APSIM.Documentation
                     output += $"{sectionHeader} {section.Title}\n\n";
                     output += ConvertToMarkdown(section.Children, sectionHeader);
                 }
-                else if (tag is Paragraph paragraph) 
+                else if (tag is Paragraph paragraph)
                 {
 
                     List<string> lines = paragraph.text.Split("\n").ToList();
                     lines = ConvertMarkdownCode(lines);
                     foreach (string line in lines)
                     {
-                        string text = line.Trim();
+                        string text = line;
                         if (text.StartsWith('#'))
                         {
                             string hashes = "#";
@@ -265,7 +279,7 @@ namespace APSIM.Documentation
                     }
                     output += "\n";
                 }
-                else if (tag is Table table) 
+                else if (tag is Table table)
                 {
                     List<int> columnWidths = new List<int>();
                     foreach(DataColumn col in table.data.Table.Columns)
@@ -291,7 +305,7 @@ namespace APSIM.Documentation
                         line2 += " ";
                         for(int k = 0; k < columnWidths[i]; k++)
                             line2 += "-";
-                        line2 += " |";                        
+                        line2 += " |";
                     }
                     output += line1 + "\n" + line2 + "\n";
 
@@ -341,7 +355,7 @@ namespace APSIM.Documentation
         /// <summary>
         /// Returns a list of all citations found, and replaces the text of the citation with the reference
         /// </summary>
-        public static List<ICitation> ProcessCitations(string input, out string output) 
+        public static List<ICitation> ProcessCitations(string input, out string output)
         {
 
             Regex regex = new Regex(@"\[\w+\]");
@@ -366,7 +380,7 @@ namespace APSIM.Documentation
                     }
                 }
             }
-            
+
             return citations;
         }
 
@@ -387,7 +401,7 @@ namespace APSIM.Documentation
                 // If a URL is provided for this citation, insert the citation
                 // as a hyperlink.
                 bool isLink = !string.IsNullOrEmpty(citation.URL);
-                if (isLink) 
+                if (isLink)
                 {
                     output += $"[{citation.BibliographyText}]({citation.URL})\n\n";
                 }
@@ -415,7 +429,7 @@ namespace APSIM.Documentation
 
             if (linkMatches.Count > 0)
                 return output;
-            
+
             foreach(Match match in matches)
             {
                 string caption = match.Groups[1].ToString();
@@ -429,7 +443,7 @@ namespace APSIM.Documentation
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public static List<(string, string)> GetAllHTMLSegments(string markdown, out string output)
         {
@@ -453,7 +467,7 @@ namespace APSIM.Documentation
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public static string RestoreHTMLSegments(string markdown, List<(string, string)> segments)
         {
@@ -465,7 +479,7 @@ namespace APSIM.Documentation
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public static string AddCSSClasses(string html)
         {
@@ -476,12 +490,12 @@ namespace APSIM.Documentation
             output = output.Replace("<table>", "<table class=\"docs-table\" ");
             output = output.Replace("<th>", "<th class=\"docs-th\"> ");
             output = output.Replace("<td>", "<td class=\"docs-td\"> ");
-            output = output.Replace("<tr>", "<tr class=\"docs-tr\"> ");        
+            output = output.Replace("<tr>", "<tr class=\"docs-tr\"> ");
             return output;
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public static string AddContentWrapper(string navigation, string content)
         {
@@ -496,7 +510,7 @@ namespace APSIM.Documentation
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public static string AddTableWrappers(string html)
         {
@@ -507,7 +521,7 @@ namespace APSIM.Documentation
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public static string AddBoilerplate(string title, string css, string content)
         {
@@ -528,6 +542,9 @@ namespace APSIM.Documentation
             output += "</head>\n";
             output += "<body>\n";
             output += content;
+            output += "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/prism.min.js\"></script>";
+            output += "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/components/prism-csharp.min.js\"></script>";
+            output += "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/plugins/keep-markup/prism-keep-markup.min.js\"></script>";
             output += "</body>\n";
             output += "</html>\n";
             return output;
@@ -555,31 +572,28 @@ namespace APSIM.Documentation
             // Get consecutive lines that start with triple tabs.
             bool inCodeBlock = false;
             List<string> formattedLines = new();
-            string pdfCodeLine = @"(\t{3})(.*)";
+            string codeSyntax = @"(```)(.*)";
 
             foreach (string line in paraLines)
             {
-                if(Regex.IsMatch(line, pdfCodeLine))
-                {
+                if(Regex.IsMatch(line, codeSyntax))
                     if(!inCodeBlock)
-                    {
-                        formattedLines.Add("");
-                        formattedLines.Add("```");
                         inCodeBlock = true;
-                    }
-                    formattedLines.Add(line);
-                }
                 else
-                {
                     if(inCodeBlock)
-                    {
-                        formattedLines.Add("```");
-                        formattedLines.Add("");
                         inCodeBlock = false;
-                    }
-                    formattedLines.Add(line);
-                }
+
+                string text = line;
+
+                //add csharp language to code if not there
+                if (inCodeBlock && line.Trim() == "```")
+                    text += "csharp";
+                
+                if (!inCodeBlock)
+                    text = line.Trim();
+                formattedLines.Add(text);
             }
+
             return formattedLines.ToList();
         }
 
@@ -615,7 +629,7 @@ namespace APSIM.Documentation
             string clemPath = "CLEM/";
             string[] tutorials = Directory.GetFiles(apsimDirectory + "/Examples/Tutorials/", "*.apsimx", SearchOption.AllDirectories);
             string[] clemTutorials = Directory.GetFiles(apsimDirectory + "/Examples/CLEM/", "*.apsimx", SearchOption.AllDirectories);
-            
+
             tutorials = tutorials.Concat(clemTutorials).ToArray();
 
             for(int i = 0;i < tutorials.Length; i++)

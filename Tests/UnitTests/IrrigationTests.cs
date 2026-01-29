@@ -1,7 +1,8 @@
-﻿using APSIM.Shared.Utilities;
+﻿using APSIM.Core;
+using APSIM.Numerics;
+using APSIM.Shared.Utilities;
 using Models;
 using Models.Core;
-using Models.Core.ApsimFile;
 using Models.Soils;
 using Models.Soils.Nutrients;
 using Models.Surface;
@@ -181,12 +182,10 @@ namespace UnitTests
                     }
                 }
             };
-            Resource.Instance.Replace(zone);
-            FileFormat.InitialiseModel(zone, (e) => throw e);
+            Simulations sims = new();
+            sims.Children.Add(zone);
+            var tree = Node.Create(sims);
 
-            zone.ParentAllDescendants();
-            foreach (IModel model in zone.FindAllDescendants())
-                model.OnCreated();
             var links = new Links();
             links.Resolve(zone, true);
             var events = new Events(zone);
