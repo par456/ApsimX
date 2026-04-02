@@ -37,7 +37,7 @@ namespace Models.Factorial
         public IStructure Structure { private get; set; }
 
         /// <summary>A specification for producing a series of factor values.</summary>
-        public string Specification { get; set; }
+        public string Specification { get; set; } = "";
 
         /// <summary>
         /// Return all possible factor values for this factor.

@@ -170,20 +170,14 @@ namespace UserInterface.Presenters
         {
             // When the user undoes/redoes something we want to select the affected
             // model. Therefore we can use the same callback for both events.
-            this.ApsimXFile = model as Simulations;
+            ApsimXFile = model as Simulations;
             this.view = view as IExplorerView;
-            this.CommandHistory = new CommandHistory(this.view.Tree);
-            this.mainMenu = new MainMenu(MainPresenter);
-            this.ContextMenu = new ContextMenu(this);
+            mainMenu = new MainMenu(MainPresenter);
+            ContextMenu = new ContextMenu(this);
             ApsimXFile.Links.Resolve(ContextMenu);
 
-            this.view.Tree.SelectedNodeChanged += this.OnNodeSelected;
-            this.view.Tree.DragStarted += this.OnDragStart;
-            this.view.Tree.AllowDrop += this.OnAllowDrop;
-            this.view.Tree.Droped += this.OnDrop;
-            this.view.Tree.Renamed += this.OnRename;
-
-            Populate();
+            RebuildTree();
+            CommandHistory = new CommandHistory(Tree);
 
             ApsimFileMetadata file = Configuration.Settings.GetMruFile(ApsimXFile.FileName);
             if (file != null && file.ExpandedNodes != null)
@@ -219,17 +213,39 @@ namespace UserInterface.Presenters
         }
 
         /// <summary>
-        /// Fully populate/refresh the view.
+        /// 
         /// </summary>
-        /// <remarks>
-        /// This will remove all nodes from the tree and rebuild it from scratch.
-        /// This will be slower than calling RefreshNode() and passing in the
-        /// top-level node, and it may also cause other unexpected behaviour such
-        /// as changing the scrollbar position. Any expanded nodes will remain expanded.
-        /// </remarks>
-        public void Populate()
+        public void RebuildTree()
         {
-            view.Tree.Populate(GetNodeDescription(ApsimXFile));
+            string selectedNode = "";
+            List<string> expandedNodes = new List<string>();
+            if (view.Tree != null)
+            {
+                if (view.Tree.ContextMenu != null)
+                {
+                    view.Tree.ContextMenu.Destroy();
+                    view.Tree.ContextMenu = null;
+                }
+                selectedNode =  view.Tree.SelectedNode;
+                expandedNodes = (view.Tree as TreeView).GetExpandedRows();
+                view.Tree.SelectedNodeChanged -= this.OnNodeSelected;
+                view.Tree.DragStarted -= this.OnDragStart;
+                view.Tree.AllowDrop -= this.OnAllowDrop;
+                view.Tree.Droped -= this.OnDrop;
+                view.Tree.Renamed -= this.OnRename;
+            }
+            if (CommandHistory != null)
+                CommandHistory.UpdateTree(this.view.Tree);
+
+            (view as ExplorerView).RebuildTree(GetNodeDescription(ApsimXFile), expandedNodes);
+
+            if (!string.IsNullOrEmpty(selectedNode))
+                view.Tree.SelectedNode = selectedNode;
+            view.Tree.SelectedNodeChanged += this.OnNodeSelected;
+            view.Tree.DragStarted += this.OnDragStart;
+            view.Tree.AllowDrop += this.OnAllowDrop;
+            view.Tree.Droped += this.OnDrop;
+            view.Tree.Renamed += this.OnRename;
         }
 
         /// <summary>Detach the model from the view.</summary>
@@ -1278,7 +1294,7 @@ namespace UserInterface.Presenters
                 this.mainMenu = new MainMenu(MainPresenter);
                 this.ContextMenu = new ContextMenu(this);
                 this.ApsimXFile.Links.Resolve(ContextMenu);
-                Populate();
+                RebuildTree();
                 PopulateMainMenu();
                 SelectNode(ApsimXFile, false);
                 this.PopulateContextMenu(ApsimXFile.FullPath);

@@ -29,11 +29,11 @@ namespace UserInterface.Views
         private string previouslySelectedNodePath;
         private string sourcePathOfItemBeingDragged;
         private string nodePathBeforeRename;
-        private Gtk.TreeView treeview1 = null;
+        private Gtk.TreeView _treeview1 = null;
         private TreeViewNode rootNode;
         private ISerializable dragDropData = null;
         private GCHandle dragSourceHandle;
-        private CellRendererText textRender;
+        private CellRendererText _textRender;
         private const string modelMime = "application/x-model-component";
         private Timer timer = new Timer();
         private bool isEdittingNodeLabel = false;
@@ -51,13 +51,15 @@ namespace UserInterface.Views
         /// </remarks>
         private bool acceleratorsAreAttached;
 
-        // If you add a new item to the tree model that is not at the end (e.g. add a bool as the third item), a lot of things will break.
-        private TreeStore treemodel = new TreeStore(typeof(string), typeof(Gdk.Pixbuf), typeof(string), typeof(string), typeof(Color), typeof(bool));
+        // If you add a new item to the tree model that is not at the end, a lot of things will break.
+        private TreeStore _treemodel {
+            get {
+                return (TreeStore)_treeview1.Model; 
+            } 
+        }
 
         /// <summary>Constructor</summary>
-        public TreeView()
-        {
-        }
+        public TreeView() {}
 
         /// <summary>Constructor</summary>
         public TreeView(ViewBase owner) : base(owner)
@@ -76,50 +78,53 @@ namespace UserInterface.Views
 
         protected override void Initialise(ViewBase ownerView, GLib.Object gtkControl)
         {
-            treeview1 = (Gtk.TreeView)gtkControl;
-            mainWidget = treeview1;
-            treeview1.Model = treemodel;
-            TreeViewColumn column = new TreeViewColumn();
             CellRendererPixbuf iconRender = new Gtk.CellRendererPixbuf();
             iconRender.SetPadding(2, 1);
-            column.PackStart(iconRender, false);
-            textRender = new Gtk.CellRendererText();
-            textRender.Editable = false;
-            textRender.EditingStarted += OnBeforeLabelEdit;
-            textRender.Edited += OnAfterLabelEdit;
-            column.PackStart(textRender, true);
-            column.SetCellDataFunc(textRender, OnSetCellData);
+
+            _textRender = new Gtk.CellRendererText();
+            _textRender.Editable = false;
+            _textRender.EditingStarted += OnBeforeLabelEdit;
+            _textRender.Edited += OnAfterLabelEdit;
 
             CellRendererText tickCell = new CellRendererText();
             tickCell.Editable = false;
+
+            TreeViewColumn column = new TreeViewColumn();
+            column.PackStart(iconRender, false);
+            column.PackStart(_textRender, true);
+            column.SetCellDataFunc(_textRender, OnSetCellData);
             column.PackEnd(tickCell, false);
             column.SetAttributes(iconRender, "pixbuf", 1);
-            column.SetAttributes(textRender, "text", 0);
+            column.SetAttributes(_textRender, "text", 0);
             column.SetAttributes(tickCell, "text", 3);
-            treeview1.AppendColumn(column);
-            treeview1.TooltipColumn = 2;
-
-            treeview1.CursorChanged += OnAfterSelect;
-            treeview1.ButtonReleaseEvent += OnButtonUp;
-            treeview1.ButtonPressEvent += OnButtonPress;
-            treeview1.RowActivated += OnRowActivated;
-            treeview1.FocusInEvent += OnTreeGainFocus;
-            treeview1.FocusOutEvent += OnTreeLoseFocus;
-            treeview1.RowExpanded += OnRowExpanded;
 
             TargetEntry[] target_table = new TargetEntry[] {
                new TargetEntry(modelMime, TargetFlags.App, 0)
             };
 
             Gdk.DragAction actions = Gdk.DragAction.Copy | Gdk.DragAction.Link | Gdk.DragAction.Move;
-            Drag.SourceSet(treeview1, Gdk.ModifierType.Button1Mask, target_table, actions);
-            Drag.DestSet(treeview1, 0, target_table, actions);
-            treeview1.DragMotion += OnDragOver;
-            treeview1.DragDrop += OnDragDrop;
-            treeview1.DragBegin += OnDragBegin;
-            treeview1.DragDataGet += OnDragDataGet;
-            treeview1.DragDataReceived += OnDragDataReceived;
-            treeview1.DragEnd += OnDragEnd;
+            Drag.SourceSet(_treeview1, Gdk.ModifierType.Button1Mask, target_table, actions);
+            Drag.DestSet(_treeview1, 0, target_table, actions);
+
+            _treeview1 = gtkControl as Gtk.TreeView;
+            _treeview1.AppendColumn(column);
+            _treeview1.TooltipColumn = 2;
+            _treeview1.CursorChanged += OnAfterSelect;
+            _treeview1.ButtonReleaseEvent += OnButtonUp;
+            _treeview1.ButtonPressEvent += OnButtonPress;
+            _treeview1.RowActivated += OnRowActivated;
+            _treeview1.FocusInEvent += OnTreeGainFocus;
+            _treeview1.FocusOutEvent += OnTreeLoseFocus;
+            _treeview1.RowExpanded += OnRowExpanded;
+            _treeview1.DragMotion += OnDragOver;
+            _treeview1.DragDrop += OnDragDrop;
+            _treeview1.DragBegin += OnDragBegin;
+            _treeview1.DragDataGet += OnDragDataGet;
+            _treeview1.DragDataReceived += OnDragDataReceived;
+            _treeview1.DragEnd += OnDragEnd;
+
+            mainWidget = _treeview1;
+
             timer.Elapsed += OnTimerElapsed;
             mainWidget.Destroyed += OnDestroyed;
         }
@@ -149,7 +154,7 @@ namespace UserInterface.Views
             {
                 TreePath selPath;
                 TreeViewColumn selCol;
-                treeview1.GetCursor(out selPath, out selCol);
+                _treeview1.GetCursor(out selPath, out selCol);
                 if (selPath != null)
                     return this.GetFullPath(selPath);
                 else
@@ -161,17 +166,17 @@ namespace UserInterface.Views
                 {
                     if (FindNode(value, out TreeIter iter))
                     {
-                        TreePath pathToSelect = treemodel.GetPath(iter);
+                        TreePath pathToSelect = _treemodel.GetPath(iter);
                         if (pathToSelect != null)
                         {
-                            treeview1.ExpandToPath(pathToSelect);
-                            treeview1.SetCursor(pathToSelect, treeview1.GetColumn(0), false);
+                            _treeview1.ExpandToPath(pathToSelect);
+                            _treeview1.SetCursor(pathToSelect, _treeview1.GetColumn(0), false);
                         }
                         // Scroll to the newly-selected cell (if necessary; in theory, setting
                         // use_align to false should cause the tree to perform the minimum amount
                         // of scrolling necessary to bring the cell onscreen).
-                        treeview1.ScrollToCell(pathToSelect, null, false, 0, 0);
-                        treeview1.GrabFocus();
+                        _treeview1.ScrollToCell(pathToSelect, null, false, 0, 0);
+                        _treeview1.GrabFocus();
                     }
                 }
             }
@@ -180,19 +185,46 @@ namespace UserInterface.Views
         /// <summary>Gets or sets the width of the tree view.</summary>
         public Int32 TreeWidth
         {
-            get { return treeview1.Allocation.Width; }
-            set { treeview1.WidthRequest = value; }
+            get { return _treeview1.Allocation.Width; }
+            set { _treeview1.WidthRequest = value; }
         }
 
         /// <summary>Gets or sets the popup menu of the tree view.</summary>
         public MenuView ContextMenu { get; set; }
+
+        /// <summary>
+        /// Record which rows are currently expanded.
+        /// We can't directly use a TreePath to an outdated TreeModel/TreeView, so we store the path as a string, and 
+        /// then parse that into a new TreePath after the model is reassembled. This assumes that the structure of the 
+        /// tree view/model does not change when RefreshNode() is called (e.g. it still has the same number of rows/columns).
+        /// </summary>
+        /// <returns></returns>
+        public List<string> GetExpandedRows()
+        {
+            
+            List<string> expandedNodes = new List<string>();
+            _treeview1.MapExpandedRows(new TreeViewMappingFunc((tree, path) =>
+            {
+                expandedNodes.Add(path.ToString());
+            }));
+            return expandedNodes;
+        }
 
         /// <summary>Populate the treeview.</summary>
         /// <param name="topLevelNode">A description of the top level root node</param>
         public void Populate(TreeViewNode topLevelNode)
         {
             rootNode = topLevelNode;
-            Refresh(rootNode);
+            Refresh(rootNode, GetExpandedRows());
+        }
+
+        /// <summary>Populate the treeview.</summary>
+        /// <param name="topLevelNode">A description of the top level root node</param>
+        /// <param name="expandedNodes">A list of nodes to expand again after refreshing.</param>
+        public void Populate(TreeViewNode topLevelNode, List<string> expandedNodes)
+        {
+            rootNode = topLevelNode;
+            Refresh(rootNode, expandedNodes);
         }
 
         /// <summary>Moves the specified node up 1 position.</summary>
@@ -201,12 +233,12 @@ namespace UserInterface.Views
         {
             if (FindNode(nodePath, out TreeIter node))
             {
-                TreePath path = treemodel.GetPath(node);
+                TreePath path = _treemodel.GetPath(node);
                 TreeIter prevnode;
-                if (path.Prev() && treemodel.GetIter(out prevnode, path))
-                    treemodel.MoveBefore(node, prevnode);
+                if (path.Prev() && _treemodel.GetIter(out prevnode, path))
+                    _treemodel.MoveBefore(node, prevnode);
 
-                treeview1.ScrollToCell(path, null, false, 0, 0);
+                _treeview1.ScrollToCell(path, null, false, 0, 0);
             }
         }
 
@@ -216,13 +248,13 @@ namespace UserInterface.Views
         {
             if (FindNode(nodePath, out TreeIter node))
             {
-                TreePath path = treemodel.GetPath(node);
+                TreePath path = _treemodel.GetPath(node);
                 TreeIter nextnode;
                 path.Next();
-                if (treemodel.GetIter(out nextnode, path))
-                    treemodel.MoveAfter(node, nextnode);
+                if (_treemodel.GetIter(out nextnode, path))
+                    _treemodel.MoveAfter(node, nextnode);
 
-                treeview1.ScrollToCell(path, null, false, 0, 0);
+                _treeview1.ScrollToCell(path, null, false, 0, 0);
             }
         }
 
@@ -233,8 +265,8 @@ namespace UserInterface.Views
         {
             if (FindNode(nodePath, out TreeIter node))
             {
-                treemodel.SetValue(node, 0, newName);
-                previouslySelectedNodePath = GetFullPath(treemodel.GetPath(node));
+                _treemodel.SetValue(node, 0, newName);
+                previouslySelectedNodePath = GetFullPath(_treemodel.GetPath(node));
             }
         }
 
@@ -243,12 +275,12 @@ namespace UserInterface.Views
         {
             if (!ReadOnly)
             {
-                textRender.Editable = true;
+                _textRender.Editable = true;
                 TreePath selPath;
                 TreeViewColumn selCol;
-                treeview1.GetCursor(out selPath, out selCol);
-                treeview1.GrabFocus();
-                treeview1.SetCursor(selPath, treeview1.GetColumn(0), true);
+                _treeview1.GetCursor(out selPath, out selCol);
+                _treeview1.GrabFocus();
+                _treeview1.SetCursor(selPath, _treeview1.GetColumn(0), true);
             }
         }
 
@@ -257,7 +289,7 @@ namespace UserInterface.Views
         {
             if (isEdittingNodeLabel == true)
             {
-                textRender.Editable = false;
+                _textRender.Editable = false;
                 // TreeView.ContextMenuStrip = this.PopupMenu;
                 if (Renamed != null && !string.IsNullOrEmpty(newText))
                 {
@@ -286,13 +318,13 @@ namespace UserInterface.Views
         public void ExpandNodes(APSIMNG.Utility.TreeNode[] expandedNodes)
         {
             foreach (var node in expandedNodes)
-                treeview1.ExpandRow(CreatePath(node), false);
+                _treeview1.ExpandRow(CreatePath(node), false);
         }
 
         public APSIMNG.Utility.TreeNode[] GetExpandedNodes()
         {
             List<APSIMNG.Utility.TreeNode> expandedRows = new List<APSIMNG.Utility.TreeNode>();
-            treeview1.MapExpandedRows((view, path) => expandedRows.Add(new APSIMNG.Utility.TreeNode(path.Indices)));
+            _treeview1.MapExpandedRows((view, path) => expandedRows.Add(new APSIMNG.Utility.TreeNode(path.Indices)));
             return expandedRows.ToArray();
         }
 
@@ -308,13 +340,13 @@ namespace UserInterface.Views
             // We need to work out where we want selection to be after this node is deleted
             TreePath cursorPath;
             TreeViewColumn cursorCol;
-            treeview1.GetCursor(out cursorPath, out cursorCol);
+            _treeview1.GetCursor(out cursorPath, out cursorCol);
             TreeIter nextSel = node;
-            TreePath pathToSelect = treemodel.GetPath(node);
+            TreePath pathToSelect = _treemodel.GetPath(node);
             if (pathToSelect.Compare(cursorPath) != 0)
                 pathToSelect = null;
-            else if (treemodel.IterNext(ref nextSel)) // If there's a "next" sibling, the current TreePath will do
-                pathToSelect = treemodel.GetPath(nextSel);
+            else if (_treemodel.IterNext(ref nextSel)) // If there's a "next" sibling, the current TreePath will do
+                pathToSelect = _treemodel.GetPath(nextSel);
             else
             {                                     // Otherwise
                 if (!pathToSelect.Prev())         // If there's a "previous" sibling, use that
@@ -325,9 +357,9 @@ namespace UserInterface.Views
             // deleted is selected. Therefore, we select the next node *before*
             // deleting the specified node.
             if (pathToSelect != null)
-                treeview1.SetCursor(pathToSelect, treeview1.GetColumn(0), false);
+                _treeview1.SetCursor(pathToSelect, _treeview1.GetColumn(0), false);
 
-            treemodel.Remove(ref node);
+            _treemodel.Remove(ref node);
         }
 
         /// <summary>Adds a child node.</summary>
@@ -340,11 +372,11 @@ namespace UserInterface.Views
             {
                 TreeIter iter;
                 if (position == -1)
-                    iter = treemodel.AppendNode(node);
+                    iter = _treemodel.AppendNode(node);
                 else
-                    iter = treemodel.InsertNode(node, position);
+                    iter = _treemodel.InsertNode(node, position);
                 RefreshNode(iter, nodeDescription);
-                treeview1.ExpandToPath(treemodel.GetPath(iter));
+                _treeview1.ExpandToPath(_treemodel.GetPath(iter));
             }
         }
 
@@ -354,7 +386,7 @@ namespace UserInterface.Views
         {
             int count = 0;
             if (FindNode(path, out TreeIter node))
-                while (treemodel.IterPrevious(ref node))
+                while (_treemodel.IterPrevious(ref node))
                     count = count + 1;
 
             return count;
@@ -369,24 +401,27 @@ namespace UserInterface.Views
         {
             try
             {
-                textRender.EditingStarted -= OnBeforeLabelEdit;
-                textRender.Edited -= OnAfterLabelEdit;
-                treeview1.FocusInEvent -= OnTreeGainFocus;
-                treeview1.FocusOutEvent -= OnTreeLoseFocus;
-                treeview1.CursorChanged -= OnAfterSelect;
-                treeview1.ButtonReleaseEvent -= OnButtonUp;
-                treeview1.ButtonPressEvent -= OnButtonPress;
-                treeview1.RowActivated -= OnRowActivated;
-                treeview1.DragMotion -= OnDragOver;
-                treeview1.DragDrop -= OnDragDrop;
-                treeview1.DragBegin -= OnDragBegin;
-                treeview1.DragDataGet -= OnDragDataGet;
-                treeview1.DragDataReceived -= OnDragDataReceived;
-                treeview1.DragEnd -= OnDragEnd;
-                timer.Elapsed -= OnTimerElapsed;
-                ContextMenu = null;
+                _textRender.EditingStarted -= OnBeforeLabelEdit;
+                _textRender.Edited -= OnAfterLabelEdit;
+                _textRender.Dispose();
 
+                _treeview1.CursorChanged -= OnAfterSelect;
+                _treeview1.ButtonReleaseEvent -= OnButtonUp;
+                _treeview1.ButtonPressEvent -= OnButtonPress;
+                _treeview1.RowActivated -= OnRowActivated;
+                _treeview1.FocusInEvent -= OnTreeGainFocus;
+                _treeview1.FocusOutEvent -= OnTreeLoseFocus;
+                _treeview1.RowExpanded -= OnRowExpanded;
+                _treeview1.DragMotion -= OnDragOver;
+                _treeview1.DragDrop -= OnDragDrop;
+                _treeview1.DragBegin -= OnDragBegin;
+                _treeview1.DragDataGet -= OnDragDataGet;
+                _treeview1.DragDataReceived -= OnDragDataReceived;
+                _treeview1.DragEnd -= OnDragEnd;
+                timer.Elapsed -= OnTimerElapsed;
                 mainWidget.Destroyed -= OnDestroyed;
+
+                ContextMenu = null;
                 owner = null;
             }
             catch (Exception err)
@@ -397,36 +432,22 @@ namespace UserInterface.Views
 
         /// <summary>Refreshes the entire tree from the specified descriptions.</summary>
         /// <param name="nodeDescriptions">The nodes descriptions.</param>
-        private void Refresh(TreeViewNode nodeDescriptions)
+        /// <param name="expandedNodes">A list of nodes to expand again after refreshing.</param>
+        private void Refresh(TreeViewNode nodeDescriptions, List<string> expandedNodes)
         {
-            // Record which rows are currently expanded.
-            // We can't directly use a TreePath to an outdated TreeModel/TreeView, so we store the path as a string, and 
-            // then parse that into a new TreePath after the model is reassembled. This assumes that the structure of the 
-            // tree view/model does not change when RefreshNode() is called (e.g. it still has the same number of rows/columns).
-            List<string> expandedRows = new List<string>();
-            treeview1.MapExpandedRows(new TreeViewMappingFunc((tree, path) =>
-            {
-                expandedRows.Add(path.ToString());
-            }));
+            _treeview1.Model = new TreeStore(typeof(string), typeof(Gdk.Pixbuf), typeof(string), typeof(Color), typeof(bool));
 
-            treemodel.Clear();
-
-            TreeIter iter = treemodel.AppendNode();
+            TreeIter iter = _treemodel.AppendNode();
             RefreshNode(iter, nodeDescriptions, false);
-            treeview1.ShowAll();
-            treeview1.ExpandRow(new TreePath("0"), false);
+            
+            _treeview1.ShowAll();
+            _treeview1.ExpandRow(new TreePath("0"), false);
+
             // Expand all rows which were previously expanded by the user.
-            try
-            {
-                expandedRows.ForEach(row => treeview1.ExpandRow(new TreePath(row), false));
-            }
-            catch (Exception err)
-            {
-                ShowError(err);
-            }
+            expandedNodes.ForEach(row => _treeview1.ExpandRow(new TreePath(row), false));
 
             if (ContextMenu != null)
-                ContextMenu.AttachToWidget(treeview1);
+                ContextMenu.AttachToWidget(_treeview1);
         }
 
         /// <summary>
@@ -438,7 +459,7 @@ namespace UserInterface.Views
         {
             if (FindNode(path, out TreeIter parent))
             {
-                TreeIter child = treemodel.AppendNode(parent);
+                TreeIter child = _treemodel.AppendNode(parent);
                 RefreshNode(child, description);
             }
             else
@@ -485,22 +506,23 @@ namespace UserInterface.Views
             Gdk.Pixbuf pixbuf = null;
             if (MasterView != null && MasterView.HasResource(description.ResourceNameForImage))
                 pixbuf = new Gdk.Pixbuf(null, description.ResourceNameForImage);
-            string tick = description.Checked ? "✓" : "";
-            treemodel.SetValues(node, description.Name, pixbuf, description.ToolTip, tick, description.Colour, description.Strikethrough);
+            _treemodel.SetValues(node, description.Name, pixbuf, description.ToolTip, description.Colour, description.Strikethrough);
 
             foreach (TreeViewNode child in description.Children)
             {
-                string path = GetFullPath(treemodel.GetPath(node));
+                string path = GetFullPath(_treemodel.GetPath(node));
                 TreeIter iter;
                 if (checkForExisting)
                 {
                     if (FindChild(node, child.Name, out TreeIter matchingChild))
                         iter = matchingChild;
                     else
-                        iter = treemodel.AppendNode(node);
+                        iter = _treemodel.AppendNode(node);
                 }
                 else
-                    iter = treemodel.AppendNode(node);
+                {
+                    iter = _treemodel.AppendNode(node);
+                }
                 RefreshNode(iter, child);
             }
         }
@@ -528,10 +550,10 @@ namespace UserInterface.Views
 
         private IEnumerable<TreeIter> GetChildren(TreeIter node)
         {
-            if (treemodel.IterChildren(out TreeIter child, node))
+            if (_treemodel.IterChildren(out TreeIter child, node))
             {
                 yield return child;
-                while (treemodel.IterNext(ref child))
+                while (_treemodel.IterNext(ref child))
                     yield return child;
             }
         }
@@ -542,7 +564,7 @@ namespace UserInterface.Views
         /// <param name="node">The node.</param>
         private string GetName(TreeIter node)
         {
-            return (string)treemodel.GetValue(node, 0);
+            return (string)_treemodel.GetValue(node, 0);
         }
 
         /// <summary>Return a string representation of the specified path.</summary>
@@ -554,12 +576,12 @@ namespace UserInterface.Views
             {
                 int[] ilist = path.Indices;
                 TreeIter iter;
-                treemodel.IterNthChild(out iter, ilist[0]);
-                result = "." + (string)treemodel.GetValue(iter, 0);
+                _treemodel.IterNthChild(out iter, ilist[0]);
+                result = "." + (string)_treemodel.GetValue(iter, 0);
                 for (int i = 1; i < ilist.Length; i++)
                 {
-                    treemodel.IterNthChild(out iter, iter, ilist[i]);
-                    result += "." + (string)treemodel.GetValue(iter, 0);
+                    _treemodel.IterNthChild(out iter, iter, ilist[i]);
+                    result += "." + (string)_treemodel.GetValue(iter, 0);
                 }
             }
             return result;
@@ -583,21 +605,21 @@ namespace UserInterface.Views
 
             result = TreeIter.Zero;
             TreeIter iter;
-            if (!treemodel.GetIterFirst(out iter))
+            if (!_treemodel.GetIterFirst(out iter))
                 // The tree is empty.
                 return false;
             for (int i = 0; i < namePathBits.Length; i++)
             {
                 string pathBit = namePathBits[i];
-                string nodeName = (string)treemodel.GetValue(iter, 0);
-                while (nodeName != pathBit && treemodel.IterNext(ref iter))
+                string nodeName = (string)_treemodel.GetValue(iter, 0);
+                while (nodeName != pathBit && _treemodel.IterNext(ref iter))
                 {
-                    nodeName = (string)treemodel.GetValue(iter, 0);
+                    nodeName = (string)_treemodel.GetValue(iter, 0);
                 }
                 if (nodeName == pathBit)
                 {
                     result = iter;
-                    if (!treemodel.IterChildren(out iter, iter) && i != namePathBits.Length - 1)
+                    if (!_treemodel.IterChildren(out iter, iter) && i != namePathBits.Length - 1)
                         // We've found an ancestor but it has no children.
                         return false;
                 }
@@ -631,15 +653,13 @@ namespace UserInterface.Views
                 // This makes a lot of assumptions about how the tree model is structured.
                 if (cell is CellRendererText)
                 {
-                    Color colour = (Color)model.GetValue(iter, 4);
+                    Color colour = (Color)model.GetValue(iter, 3);
                     if (colour == Color.Empty)
                     {
-
-                        Gdk.Color foreground = treeview1.StyleContext.GetColor(StateFlags.Normal).ToColour().ToGdk();
-
+                        Gdk.Color foreground = _treeview1.StyleContext.GetColor(StateFlags.Normal).ToColour().ToGdk();
                         colour = Colour.FromGtk(foreground);
                     }
-                    (cell as CellRendererText).Strikethrough = (bool)model.GetValue(iter, 5);
+                    (cell as CellRendererText).Strikethrough = (bool)model.GetValue(iter, 4);
 
                     // This is a bit of a hack which we use to convert a System.Drawing.Color
                     // to its hex string equivalent (e.g. #FF0000).
@@ -662,14 +682,14 @@ namespace UserInterface.Views
         {
             try
             {
-                if (SelectedNodeChanged != null && treeview1 != null)
+                if (SelectedNodeChanged != null && _treeview1 != null)
                 {
-                    treeview1.CursorChanged -= OnAfterSelect;
+                    _treeview1.CursorChanged -= OnAfterSelect;
                     NodeSelectedArgs selectionChangedData = new NodeSelectedArgs();
                     selectionChangedData.OldNodePath = previouslySelectedNodePath;
                     TreePath selPath;
                     TreeViewColumn selCol;
-                    treeview1.GetCursor(out selPath, out selCol);
+                    _treeview1.GetCursor(out selPath, out selCol);
                     if (selPath != null) {
                         selectionChangedData.NewNodePath = GetFullPath(selPath);
                         if (selectionChangedData.NewNodePath != selectionChangedData.OldNodePath)
@@ -682,8 +702,8 @@ namespace UserInterface.Views
                     // Presenter is ignoring the SelectedNodeChanged event.
                     // We should scroll to the newly selected node so the user
                     // can actually see what they've selected.
-                    treeview1.GetCursor(out TreePath path, out _);
-                    treeview1.ScrollToCell(path, null, false, 0, 1);
+                    _treeview1.GetCursor(out TreePath path, out _);
+                    _treeview1.ScrollToCell(path, null, false, 0, 1);
                 }
             }
             catch (Exception err)
@@ -692,8 +712,8 @@ namespace UserInterface.Views
             }
             finally
             {
-                if (SelectedNodeChanged != null && treeview1 != null)
-                    treeview1.CursorChanged += OnAfterSelect;
+                if (SelectedNodeChanged != null && _treeview1 != null)
+                    _treeview1.CursorChanged += OnAfterSelect;
             }
         }
 
@@ -711,21 +731,21 @@ namespace UserInterface.Views
                 timer.Stop();
                 if (e.Event.Button == 1 && e.Event.Type == Gdk.EventType.ButtonPress)
                 {
-                    if(treeview1.IsFocus) 
+                    if(_treeview1.IsFocus) 
                     {
                         TreePath path;
                         TreeViewColumn col;
                         // Get the clicked location
-                        if (treeview1.GetPathAtPos((int)e.Event.X, (int)e.Event.Y, out path, out col))
+                        if (_treeview1.GetPathAtPos((int)e.Event.X, (int)e.Event.Y, out path, out col))
                         {
                             // See if the click was on the current selection
                             TreePath selPath;
                             TreeViewColumn selCol;
-                            treeview1.GetCursor(out selPath, out selCol);
+                            _treeview1.GetCursor(out selPath, out selCol);
                             if (selPath != null && path.Compare(selPath) == 0)
                             {
                                 // Check where on the row we are located, allowing 16 pixels for the image, and 2 for its border
-                                Gdk.Rectangle rect = treeview1.GetCellArea(path, col);
+                                Gdk.Rectangle rect = _treeview1.GetCellArea(path, col);
                                 if (e.Event.X > rect.X + 18)
                                 {
                                     // We want this to be a bit longer than the double-click interval, which is normally 250 milliseconds
@@ -738,7 +758,7 @@ namespace UserInterface.Views
                     }
                     else
                     {
-                        treeview1.GrabFocus();
+                        _treeview1.GrabFocus();
                     }
                 }
             }
@@ -787,10 +807,10 @@ namespace UserInterface.Views
             try
             {
                 timer.Stop();
-                if (treeview1.GetRowExpanded(e.Path))
-                    treeview1.CollapseRow(e.Path);
+                if (_treeview1.GetRowExpanded(e.Path))
+                    _treeview1.CollapseRow(e.Path);
                 else
-                    treeview1.ExpandRow(e.Path, false);
+                    _treeview1.ExpandRow(e.Path, false);
                 e.RetVal = true;
 
                 DoubleClicked?.Invoke(this, new EventArgs());
@@ -812,7 +832,7 @@ namespace UserInterface.Views
             {
                 TreePath path = e.Path.Copy();
                 path.Down();
-                treeview1.ScrollToCell(path, null, false, 0, 0);
+                _treeview1.ScrollToCell(path, null, false, 0, 0);
             }
             catch (Exception err)
             {
@@ -896,16 +916,16 @@ namespace UserInterface.Views
                 e.RetVal = false;
                 Gdk.Drag.Status(e.Context, 0, e.Time); // Default to no drop
 
-                Gdk.Atom target = Drag.DestFindTarget(treeview1, e.Context, null);
+                Gdk.Atom target = Drag.DestFindTarget(_treeview1, e.Context, null);
                 // Get the drop location
                 TreePath path;
                 TreeIter dest;
-                if (treeview1.GetPathAtPos(e.X, e.Y, out path) && treemodel.GetIter(out dest, path) &&
+                if (_treeview1.GetPathAtPos(e.X, e.Y, out path) && _treemodel.GetIter(out dest, path) &&
                     target != null && target != Gdk.Atom.Intern("GDK_NONE", false))
                 {
                     AllowDropArgs args = new AllowDropArgs();
                     args.NodePath = GetFullPath(path);
-                    Drag.GetData(treeview1, e.Context, target, e.Time);
+                    Drag.GetData(_treeview1, e.Context, target, e.Time);
                     if (dragDropData != null)
                     {
                         args.DragObject = dragDropData;
@@ -991,18 +1011,18 @@ namespace UserInterface.Views
         {
             try
             {
-                Gdk.Atom target = Drag.DestFindTarget(treeview1, e.Context, null);
+                Gdk.Atom target = Drag.DestFindTarget(_treeview1, e.Context, null);
                 // Get the drop location
                 TreePath path;
                 TreeIter dest;
                 bool success = false;
-                if (treeview1.GetPathAtPos(e.X, e.Y, out path) && treemodel.GetIter(out dest, path) &&
+                if (_treeview1.GetPathAtPos(e.X, e.Y, out path) && _treemodel.GetIter(out dest, path) &&
                     target != Gdk.Atom.Intern("GDK_NONE", false))
                 {
                     AllowDropArgs args = new AllowDropArgs();
                     args.NodePath = GetFullPath(path);
 
-                    Drag.GetData(treeview1, e.Context, target, e.Time);
+                    Drag.GetData(_treeview1, e.Context, target, e.Time);
                     if (dragDropData != null)
                     {
                         DropArgs dropArgs = new DropArgs();
@@ -1073,7 +1093,7 @@ namespace UserInterface.Views
             {
                 if (ContextMenu != null && acceleratorsAreAttached)
                 {
-                    (treeview1.Toplevel as Gtk.Window).RemoveAccelGroup(ContextMenu.Accelerators);
+                    (_treeview1.Toplevel as Gtk.Window).RemoveAccelGroup(ContextMenu.Accelerators);
                     acceleratorsAreAttached = false;
                 }
             }
@@ -1095,7 +1115,7 @@ namespace UserInterface.Views
                 // window is already in the list of acceleratables. Need to remove accelerators before we add them!
                 if (ContextMenu != null && !acceleratorsAreAttached)
                 {
-                    (treeview1.Toplevel as Gtk.Window).AddAccelGroup(ContextMenu.Accelerators);
+                    (_treeview1.Toplevel as Gtk.Window).AddAccelGroup(ContextMenu.Accelerators);
                     acceleratorsAreAttached = true;
                 }
             }
@@ -1109,7 +1129,7 @@ namespace UserInterface.Views
         {
             if (isEdittingNodeLabel)
             {
-                textRender.StopEditing(true);
+                _textRender.StopEditing(true);
                 isEdittingNodeLabel = false;
                 nodePathBeforeRename = "";
             }
@@ -1123,7 +1143,7 @@ namespace UserInterface.Views
         public void ExpandChildren(string path, bool recursive = true)
         {
             if (FindNode(path, out TreeIter node))
-                treeview1.ExpandRow(treemodel.GetPath(node), recursive);
+                _treeview1.ExpandRow(_treemodel.GetPath(node), recursive);
         }
 
         /// <summary>
@@ -1133,7 +1153,7 @@ namespace UserInterface.Views
         public void CollapseChildren(string path)
         {
             if (FindNode(path, out TreeIter node))
-                treeview1.CollapseRow(treemodel.GetPath(node));
+                _treeview1.CollapseRow(_treemodel.GetPath(node));
         }
     }
 }

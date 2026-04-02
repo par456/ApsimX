@@ -45,6 +45,11 @@ namespace UserInterface.Interfaces
         /// <param name="rootNode">A description of the top level root node</param>
         void Populate(TreeViewNode rootNode);
 
+        /// <summary>Populate the treeview.</summary>
+        /// <param name="rootNode">A description of the top level root node</param>
+        /// <param name="expandedNodes">A list of nodes to expand again after refreshing.</param>
+        void Populate(TreeViewNode rootNode, List<string> expandedNodes);
+
         /// <summary>
         /// Refresh the node at the given data..
         /// </summary>

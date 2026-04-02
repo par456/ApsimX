@@ -1,5 +1,6 @@
 using APSIM.Shared;
 using APSIM.Shared.Utilities;
+using Models.Core;
 
 namespace APSIM.Core;
 
@@ -550,10 +551,14 @@ public class Node : IStructure
             foreach (var node in Walk())
                 node.IsInitialising = true;
 
+            List<IGenerateNodes> generateNodes = new List<IGenerateNodes>();
             foreach (Node node in Walk().Where(n => n.Model is ICreatable))
             {
                 try
                 {
+                    if (node.Model is IGenerateNodes generateNode)
+                        generateNodes.Add(generateNode);
+
                     (node.Model as ICreatable).OnCreated();
                 }
                 catch (Exception err)
@@ -563,6 +568,10 @@ public class Node : IStructure
                     errorHandler(err);
                 }
             }
+            
+            string directory = Path.GetDirectoryName(fileName);
+            foreach (IGenerateNodes model in generateNodes)
+                model.GenerateNodes(directory);
         }
         finally
         {

@@ -1,5 +1,6 @@
 using APSIM.Shared.Utilities;
 using Models.Core;
+using Models.Factorial;
 using Models.Utilities;
 using System;
 using System.Collections;
@@ -7,6 +8,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Timers;
 using UserInterface.Classes;
 using UserInterface.Commands;
 using UserInterface.EventArguments;
@@ -31,6 +33,8 @@ namespace UserInterface.Presenters
         /// The explorer presenter instance.
         /// </summary>
         protected ExplorerPresenter presenter;
+
+        private Timer _fileRefreshTimer;
 
         /// <summary>
         /// A filter function which can be used to filter which properties
@@ -73,6 +77,15 @@ namespace UserInterface.Presenters
 
             RefreshView(this.model);
             presenter.CommandHistory.ModelChanged += OnModelChanged;
+
+            if (model is FactorsFromFile factors)
+            {
+                _fileRefreshTimer = new Timer(2000);
+                _fileRefreshTimer.AutoReset = true;
+                _fileRefreshTimer.Elapsed += OnRefreshElapsed;
+                _fileRefreshTimer.Start();
+            }
+
             this.view.PropertyChanged += OnViewChanged;
         }
 
@@ -187,6 +200,11 @@ namespace UserInterface.Presenters
         {
             view.SaveChanges();
             view.PropertyChanged -= OnViewChanged;
+            if (_fileRefreshTimer != null)
+            {
+                _fileRefreshTimer.Stop();
+                _fileRefreshTimer.Elapsed -= OnRefreshElapsed;
+            }
             (view as ViewBase).Dispose();
             presenter.CommandHistory.ModelChanged -= OnModelChanged;
         }
@@ -207,7 +225,31 @@ namespace UserInterface.Presenters
         protected virtual void OnModelChanged(object changedModel)
         {
             if (propertyMap.Values.Any(p => p.Model == changedModel))
-                RefreshView(this.model);
+            {
+                RefreshView(model);
+                if (model is IGenerateNodes generator)
+                {
+                    generator.GenerateNodes(presenter.ApsimXFile.FileName);
+                    presenter.RebuildTree();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        protected virtual void OnRefreshElapsed(object sender, EventArgs e)
+        {
+            if (model is FactorsFromFile factors)
+            {
+                if (factors.CheckFileUpdated())
+                {
+                    factors.GenerateNodes(presenter.ApsimXFile.FileName);
+                    presenter.RebuildTree();
+                }
+            }
         }
 
         /// <summary>

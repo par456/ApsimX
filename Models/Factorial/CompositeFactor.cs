@@ -30,6 +30,9 @@ namespace Models.Factorial
         /// <summary>Parameterless constrctor needed for serialisation</summary>
         public CompositeFactor()
         {
+            Paths = new List<string>();
+            Values = new List<object>();
+            Specifications = new List<string>();
         }
 
         /// <summary>Constructor</summary>
@@ -37,6 +40,7 @@ namespace Models.Factorial
         {
             Paths = new List<string> { path };
             Values = new List<object> { value };
+            Specifications = new List<string>();
             Name = name;
         }
 
@@ -46,6 +50,7 @@ namespace Models.Factorial
             Parent = parentFactor;
             Paths = new List<string> { path };
             Values = new List<object> { value };
+            Specifications = new List<string>();
             if (value is IModel)
                 Name = (value as IModel).Name;
             else
@@ -111,14 +116,14 @@ namespace Models.Factorial
             paths = new List<string>();
             values = new List<object>();
 
-            if (Specifications != null)
+            if (Specifications != null && Specifications.Count > 0)
             {
                 // Compound factorvalue i.e. multiple specifications that all
                 // work on a single simulation.
                 foreach (var specification in Specifications)
                     ParseSpecification(specification, paths, values);
             }
-            if (Paths != null)
+            if (Paths != null && Paths.Count > 0)
             {
                 paths.AddRange(Paths);
                 values.AddRange(Values);
